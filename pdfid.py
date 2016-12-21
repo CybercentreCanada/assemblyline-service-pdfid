@@ -5,7 +5,7 @@ import os
 from base64 import b64decode
 from textwrap import dedent
 
-from assemblyline.al.service.pdfid.ext.ePDFId import PDF_ELEMENT_COMMENT, PDF_ELEMENT_XREF, PDF_ELEMENT_TRAILER, \
+from al_services.alsvc_pdfid.ext.ePDFId import PDF_ELEMENT_COMMENT, PDF_ELEMENT_XREF, PDF_ELEMENT_TRAILER, \
     PDF_ELEMENT_STARTXREF, PDF_ELEMENT_INDIRECT_OBJECT, cPDFParser, PDFiD2String, PDF_iD
 from assemblyline.al.common.heuristics import Heuristic
 from assemblyline.al.common.result import Result, ResultSection, TEXT_FORMAT
