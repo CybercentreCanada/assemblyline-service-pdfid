@@ -63,7 +63,7 @@ class PDFId(ServiceBase):
     SERVICE_CATEGORY = "Static Analysis"
     SERVICE_DESCRIPTION = "This service extracts metadata from PDFs using Didier Stevens python library PDFId."
     SERVICE_ENABLED = True
-    SERVICE_REVISION = ServiceBase.parse_revision('$Id: 0e138b04b8cad3377d30c886bc9702a5e4eb6b98 $')
+    SERVICE_REVISION = ServiceBase.parse_revision('$Id$')
     SERVICE_VERSION = '1'
     SERVICE_CPU_CORES = 1
     SERVICE_RAM_MB = 256
