@@ -302,8 +302,8 @@ class PDFID(ServiceBase):
                                         sub_references = sub_p.split("\n", 3)[2].replace('Referencing:', '').strip()\
                                             .split(", ")
                                         type = sub_p.split("\n", 2)[1].replace('Type:', '').strip().replace("/", "")
-                                        # If the object contains a stream or /Filter flag, extract the object.
-                                        if "Contains stream" in sub_p or "/Filter" in sub_p :
+                                        # If the object contains a stream, extract the object.
+                                        if "Contains stream" in sub_p:
                                             try:
                                                 objnum = sub_p.split("\n", 1)[0].split(" ")[1]
                                                 obj_extract_triage.add(objnum)
@@ -320,24 +320,16 @@ class PDFID(ServiceBase):
                                                     pass
                                         # If not, extract object detail in to carved output
                                         elif pdfparser_subresult['obj_details'] != "":
-                                            # If the object details contains /Filter flag, extract the object.
-                                            if "/Filter" in pdfparser_subresult['obj_details']:
-                                                try:
-                                                    objnum = sub_p.split("\n", 1)[0].split(" ")[1]
-                                                    obj_extract_triage.add(objnum)
-                                                except:
-                                                    pass
-                                            else:
-                                                try:
-                                                    objnum = sub_p.split("\n", 1)[0].split(" ")[1]
-                                                    if objnum in carved_content:
-                                                        carved_content[objnum]\
-                                                            .append({keyword: pdfparser_subresult['obj_details']})
-                                                    else:
-                                                        carved_content[objnum] = \
-                                                            [{keyword: pdfparser_subresult['obj_details']}]
-                                                except:
-                                                    continue
+                                            try:
+                                                objnum = sub_p.split("\n", 1)[0].split(" ")[1]
+                                                if objnum in carved_content:
+                                                    carved_content[objnum]\
+                                                        .append({keyword: pdfparser_subresult['obj_details']})
+                                                else:
+                                                    carved_content[objnum] = \
+                                                        [{keyword: pdfparser_subresult['obj_details']}]
+                                            except:
+                                                continue
 
                                 for e in err:
                                     errors.add(e)
