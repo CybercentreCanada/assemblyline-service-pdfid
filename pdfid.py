@@ -27,8 +27,8 @@ class PDFID(ServiceBase):
         super(PDFID, self).__init__(cfg)
 
     def import_service_deps(self):
-        global os, pdfid, pdfparser, re
-        from pdfid import pdfid
+        global os, pdid, pdfparser, re
+        from pdfid import pdfid as pdid
         from pdfparser import pdf_parser as pdfparser
         import os
         import re
@@ -42,7 +42,7 @@ class PDFID(ServiceBase):
     def get_pdfid(self, path, additional_keywords, options, deep):
 
         try:
-            pdfid_result, errors = pdfid.PDFiDMain(path, additional_keywords, options, deep)
+            pdfid_result, errors = pdid.PDFiDMain(path, additional_keywords, options, deep)
         except Exception as e:
             raise Exception("PDFID failed to run on sample. Error: {}" .format(e))
 
