@@ -1233,6 +1233,7 @@ def PDFParserMain(filename, outdirectory, **kwargs):
     hsh = kwargs.get("hash", False)
     dump = kwargs.get("dump", None)
     get_object_detail = kwargs.get("get_object_detail", False)
+    get_malform = kwargs.get("get_malform", True)
 
     if dump:
         dump = os.path.join(outdirectory, dump)
@@ -1399,8 +1400,8 @@ def PDFParserMain(filename, outdirectory, **kwargs):
                         res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
                                                      hsh=hsh, show_stream=show_stream)
                         results['parts'].append(res)
-                elif object.type == PDF_ELEMENT_MALFORMED:
-                    if len(object.content) > 100:
+                elif object.type == PDF_ELEMENT_MALFORMED and get_malform:
+                    if len(object.content) > 50:
                         try:
                             with open(malform_content, 'wb') as fExtract:
                                 fExtract.write(C2BIP3(object.content))

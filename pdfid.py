@@ -21,6 +21,7 @@ class PDFID(ServiceBase):
             'plugin_suspicious_properties',
             'plugin_triage',
         ],
+        'MAX_PDF_SIZE': 3000000,
     }
 
     def __init__(self, cfg=None):
@@ -56,7 +57,7 @@ class PDFID(ServiceBase):
 
         return pdfparser_statresult, errors
 
-    def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords):
+    def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
         triage_keywords = []
         all_errors = set()
         objstms = False
@@ -154,13 +155,15 @@ class PDFID(ServiceBase):
         if request.deep_scan:
             options = {
                 "verbose": True,
-                "nocanonicalizedoutput": True
+                "nocanonicalizedoutput": True,
+                "get_malform": get_malform
             }
         else:
             options = {
                 "verbose": True,
                 "elements": "ctsi",
                 "type": "/EmbeddedFile",
+                "get_malform": get_malform
             }
         try:
             pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
@@ -472,10 +475,10 @@ class PDFID(ServiceBase):
                                 # Remove any extra content before objects
                                 if not re.match("<<.*", stream):
                                     extra_content = re.match(r'[^<]*', stream).group(0)
-                                    stream = stream.replace(extra_content, "%{}" .format(extra_content))
+                                    stream = stream.replace(extra_content, "%{}\x0A" .format(extra_content))
                                 # Find all labels and surround them with obj headers
                                 obj_idx = 1
-                                for m in re.findall(r"<<[^\n]*>>\x0A", stream):
+                                for m in re.findall(r"(<<[^\n]*>>\x0A|<<[^\n]*>>$)", stream):
                                     stream = stream.replace(m, "{} 0 obj\x0A" .format(obj_idx) + m + obj_footer)
                                     obj_idx += 1
                                 f.seek(0, 0)
@@ -483,7 +486,7 @@ class PDFID(ServiceBase):
 
         return objstm_file
 
-    def analyze_objstm(self, path, working_dir):
+    def analyze_objstm(self, path, working_dir, deep_scan):
 
         objstm_extracted = set()
 
@@ -500,61 +503,71 @@ class PDFID(ServiceBase):
             self.log.debug(e)
 
         parts = pdfparser_result.get("parts", None)
-        # Extract any embedded files
+        # Only extract if less than 10
         if parts:
-            idx = 0
-            for p in sorted(parts):
-                if "Type: /ObjStm" in p:
-                    getobj = p.split("\n", 1)[0].split(" ")[1]
-                    if getobj in objstm_extracted:
-                        continue
-                    dump_file = os.path.join(self.working_directory, "objstm_{0}_{1}" .format(getobj, idx))
-                    idx += 1
-                    obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
-                    if obj_file:
-                        objstm_extracted.add(getobj)
-                        obj_files.add(obj_file)
+            if len(parts) < 15 or deep_scan:
+                idx = 0
+                for p in sorted(parts):
+                    if "Type: /ObjStm" in p:
+                        getobj = p.split("\n", 1)[0].split(" ")[1]
+                        if getobj in objstm_extracted:
+                            continue
+                        dump_file = os.path.join(self.working_directory, "objstm_{0}_{1}" .format(getobj, idx))
+                        idx += 1
+                        obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
+                        if obj_file:
+                            objstm_extracted.add(getobj)
+                            obj_files.add(obj_file)
 
-        return obj_files
+            return obj_files
 
     def execute(self, request):
+        max_size = self.cfg['MAX_PDF_SIZE']
         result = Result()
         request.result = result
-        path = request.download().encode('ascii', 'ignore')
-        working_dir = self.working_directory
+        if (request.task.size or 0) < max_size or request.deep_scan:
+            path = request.download().encode('ascii', 'ignore')
+            working_dir = self.working_directory
 
-        # CALL PDFID and identify all suspicious keyword streams
-        heur = self.cfg['HEURISTICS']
-        additional_keywords = self.cfg['ADDITIONAL_KEYS']
+            # CALL PDFID and identify all suspicious keyword streams
+            additional_keywords = self.cfg['ADDITIONAL_KEYS']
+            heur = self.cfg['HEURISTICS']
 
-        all_errors = set()
+            all_errors = set()
 
-        res_txt = "Main Document Results"
-        res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur, additional_keywords)
-        result.add_result(res)
+            res_txt = "Main Document Results"
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur, additional_keywords)
+            result.add_result(res)
 
-        for e in errors:
-            all_errors.add(e)
+            for e in errors:
+                all_errors.add(e)
 
-        # # ObjStms: Treat all ObjStms like a standalone PDF document
-        if contains_objstms:
-            objres = ResultSection(title_text="Stream Object Results", score=SCORE.NULL)
-            objstm_files = self.analyze_objstm(path, working_dir)
-            obj_cnt = 1
-            for osf in objstm_files:
-                parent_obj = osf.split("_")[1]
-                res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
-                # It is going to look suspicious as the service created the PDF
-                if 'plugin_suspicious_properties'in heur:
-                    heur.remove("plugin_suspicious_properties")
-                res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
-                                                                 additional_keywords)
-                obj_cnt += 1
-                objres.add_section(res)
-            result.add_result(objres)
+            # # ObjStms: Treat all ObjStms like a standalone PDF document
+            if contains_objstms:
+                objres = ResultSection(title_text="Stream Object Results", score=SCORE.NULL)
+                objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
+                obj_cnt = 1
+                for osf in objstm_files:
+                    parent_obj = osf.split("_")[1]
+                    res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
+                    # It is going to look suspicious as the service created the PDF
+                    try:
+                        heur.remove("plugin_suspicious_properties")
+                    except:
+                        pass
+                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
+                                                                     additional_keywords, get_malform=False)
+                    obj_cnt += 1
+                    objres.add_section(res)
+                result.add_result(objres)
 
-        if len(all_errors) > 0:
-            erres = ResultSection(title_text="Errors Analyzing PDF", score=SCORE.NULL)
-            for e in all_errors:
-                erres.add_line(e)
-            result.add_result(erres)
+            if len(all_errors) > 0:
+                erres = ResultSection(title_text="Errors Analyzing PDF", score=SCORE.NULL)
+                for e in all_errors:
+                    erres.add_line(e)
+                result.add_result(erres)
+
+        else:
+            request.result.add_section(ResultSection(SCORE['NULL'], "PDF Analysis of the file was"
+                                                                    " skipped because the file is "
+                                                                    "too big (limit is 3 MB)."))
