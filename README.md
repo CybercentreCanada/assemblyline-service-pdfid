@@ -84,7 +84,7 @@ when present:
 
 - ObjStms
     - Service will attempt to resubmit object streams in samples as PDF
-    objects to re-run against PDFId and PDFParser analyzers
+    files to re-run against PDFId and PDFParser analyzers
 
 ### PDFId Plugins
 
