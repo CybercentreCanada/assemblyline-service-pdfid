@@ -80,7 +80,9 @@ when present:
 - Extracts Suspicious Elements:
     - Embedded files (as extracted file)
     - Entire Objects (as extracted file) (determined by PDFId plugins)
-    - Specific Object content (in AL result) (determined by PDFId plugins)
+    - Specific Object content (in AL result) and will run FrankenStrings
+    Patterns against content to search for IOCs (determined by PDFId
+    plugins)
 
 - ObjStms
     - Service will attempt to resubmit object streams in samples as PDF
