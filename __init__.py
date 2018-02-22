@@ -1,1 +1,1 @@
-from pdfid import PDFId
+from pdfid_al import PDFId

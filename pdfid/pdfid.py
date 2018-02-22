@@ -658,7 +658,10 @@ class cPDFiD():
         self.colors_gt_2_24 = self.keywords['/Colors > 2^24']
 
         self.non_stream_entropy = float(xmlDoc.documentElement.getAttribute('NonStreamEntropy'))
-        self.last_eof_bytes = int((xmlDoc.documentElement.getAttribute('CountCharsAfterLastEOF')))
+        try:
+            self.last_eof_bytes = int((xmlDoc.documentElement.getAttribute('CountCharsAfterLastEOF')))
+        except:
+            self.last_eof_bytes = 0
 
 def Quote(value, separator, quote):
     if isinstance(value, str):

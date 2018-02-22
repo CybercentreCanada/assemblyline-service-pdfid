@@ -1242,6 +1242,9 @@ def PDFParserMain(filename, outdirectory, **kwargs):
 
     malform_content = os.path.join(outdirectory, "malformed_content")
 
+    max_search_hits = 50
+    search_hits = 0
+
     try:
         oPDFParser = cPDFParser(filename, verbose=verbose, extract=malform_content)
     except Exception as e:
@@ -1350,16 +1353,21 @@ def PDFParserMain(filename, outdirectory, **kwargs):
                         results['parts'].append('startxref %d' % object.index)
                 elif object.type == PDF_ELEMENT_INDIRECT_OBJECT and selectIndirectObject:
                     if search:
-                        if object.Contains(search):
-                            res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
-                                                         hsh=hsh, show_stream=show_stream)
-                            if search in res:
-                                results['parts'].append(res)
-                            else:
-                                # Try again, this time getting the raw output
-                                res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=True)
+                        if search_hits <= max_search_hits:
+                            if object.Contains(search):
+                                res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
+                                                             hsh=hsh, show_stream=show_stream)
                                 if search in res:
                                     results['parts'].append(res)
+                                    search_hits += 1
+                                else:
+                                    # Try again, this time getting the raw output
+                                    res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=True)
+                                    if search in res:
+                                        results['parts'].append(res)
+                                        search_hits += 1
+                        else:
+                            break
                     elif key:
                         oPDFParseDictionary = cPDFParseDictionary(object.content[1:], nocanonicalizedoutput)
                         if oPDFParseDictionary.parsed != None:

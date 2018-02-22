@@ -21,11 +21,14 @@ class cPDFiDTriage(cPluginParent):
         Modified by CSE to fit ASSEMBLYLINE Service
         """
         score = 0
-        for keyword in ('/JS', '/JavaScript', '/AA', '/OpenAction', '/AcroForm', '/JBIG2Decode', '/RichMedia',
-                        '/Launch', '/XFA', '/Colors > 2^24'):
+        for keyword in ('/JS', '/JavaScript', '/AA', '/OpenAction', '/JBIG2Decode', '/Launch', '/Colors > 2^24'):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 250
+        for keyword in ('/AcroForm', '/RichMedia', '/XFA'):
+            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
+                self.hits.add(keyword)
+                score += 100
         # Other content to flag for PDFParser to extract, but not to score
         for keyword in ['/Annot']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
