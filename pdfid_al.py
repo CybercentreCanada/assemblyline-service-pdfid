@@ -4,7 +4,7 @@ from assemblyline.al.common.result import SCORE, TAG_TYPE, TAG_WEIGHT
 from assemblyline.al.service.base import ServiceBase
 
 
-class PDFID(ServiceBase):
+class PDFId(ServiceBase):
     SERVICE_ACCEPTS = 'document/pdf'
     SERVICE_CATEGORY = "Static Analysis"
     SERVICE_DESCRIPTION = "This service extracts metadata from PDFs using Didier Stevens PDFId & PDFParser."
@@ -25,7 +25,7 @@ class PDFID(ServiceBase):
     }
 
     def __init__(self, cfg=None):
-        super(PDFID, self).__init__(cfg)
+        super(PDFId, self).__init__(cfg)
 
     def import_service_deps(self):
         global os, pdid, pdfparser, re

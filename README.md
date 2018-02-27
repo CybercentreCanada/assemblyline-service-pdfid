@@ -1,14 +1,33 @@
 # PDFId Service
 
-This Assemblyline service extracts metadata from PDFs using Didier Stevens python library PDFId.
+This Assemblyline service extracts metadata and objects from PDF files
+using Didier Stevens PDFId (Version 2.4) and PDFParser (Version 6.8)
+tools.
 
-**NOTE**: This service does not require you to buy any licence and is preinstalled and working after a default installation
+**NOTE**: This service does not require you to buy any licence and is
+preinstalled and working after a default installation
+
+## Configuration
+
+To add keywords to PDFId's search list, edit the following configuration
+parameter:
+
+ADDITIONAL_KEYS=(Default: \["/URI"])
+
+To add new plugin scripts to PDFID, edit the following configuration parameter:
+
+HEURISTICS=(Default: \["plugin_embeddedfile", "plugin_nameobfuscation",
+"plugin_suspicious_properties", "plugin_triage])
 
 ## Execution
 
-The PDFId service will report the following information for each file when present:
+The PDFId service will report the following information for each file
+when present:
 
-####PDF File Information
+### File Information
+
+
+#### PDFId
 
 - PDF Header String
 - Number of:
@@ -39,28 +58,73 @@ The PDFId service will report the following information for each file when prese
 - Creation Date (AL tag: PDF_DATE_CREATION)
 - Last Modification Date (AL tag: PDF_DATE_LASTMODIFIED)
 - Source Modified Date (AL tag: PDF_DATE_SOURCEMODIFIED)
-- Modification Date (AL tag: PDF_DATE_PDFX)
 
-####Heuristics
+#### PDFParser
+- Number of:
+    - /Comment
+    - /XREF
+    - /Trailer
+    - /StartXref
+    - /Indirect object
+    - /Catalog
+    - /ExtGState
+    - /Font
+    - /FontDescriptor
+    - /Pages
 
-**AL_PDFID_001**: Launch command used.
+- Extracts PDF Elements:
+    - Comments
+    - Trailer
+    - StartXref
 
-**AL_PDFID_002**: There are byte(s) following the end of the PDF.
+- Extracts Suspicious Elements:
+    - Embedded files (as extracted file)
+    - Entire Objects (as extracted file) (determined by PDFId plugins)
+    - Specific Object content (in AL result) and will run FrankenStrings
+    Patterns against content to search for IOCs (determined by PDFId
+    plugins)
 
-**AL_PDFID_003**: Looks for /JBIG2Decode. Using the JBIG2 compression.
+- ObjStms
+    - Service will attempt to resubmit object streams in samples as PDF
+    files to re-run against PDFId and PDFParser analyzers
 
-**AL_PDFID_004**: Looks for /AcroForm.  This is an action launched by Forms.                              
+### PDFId Plugins
 
-**AL_PDFID_005**: Looks for /RichMedia.  This can be use to embed Flash in a PDF.
+PDFId plugins are python scripts used by PDFId service to score
+suspicious properties based on PDFId results. Plugins can be added to
+service by users (see configuration above). The following format is
+required for plugin scripts to work with this AL service:
 
-**AL_PDFID_006**: Date tag is ModDate. Will output the date value.
 
-**AL_PDFID_007**: Date tag is CreationDate. Will output the date value.
-                      
-**AL_PDFID_008**: Date tag is LastModified. Will output the date value.
+    class cPDFiD[NAME](cPluginParent):
+        onlyValidPDF = True
+        name = '[NAME OF PLUGIN]'
 
-**AL_PDFID_009**: Date tag is SourceModified. Will output the date value.
-                                   
-**AL_PDFID_010**: Date tag is pdfx. Will output the date value.
-                               
-**AL_PDFID_011**: Found the /Encrypt string in the file.
+        def __init__(self, oPDFiD):
+            self.oPDFiD = oPDFiD
+            # Whether or not hits is used, it must be returned by Score
+            self.hits = []
+
+        def Score(self):
+            score = 0
+            [conditions that might adjust score/self.hits]
+
+            return score, self.hits
+
+        def Instructions(self, score, hits):
+            if score == 1000:
+                # These messages will show in AL result,
+                along with score
+                return 'Some message'
+
+            if score == 500:
+                return 'Some other message'
+
+            if score == 0:
+                return
+
+See source code under "pdfid" folder for examples of plugins already
+used by this service.
+
+
+
