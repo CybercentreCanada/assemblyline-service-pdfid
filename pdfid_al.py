@@ -513,7 +513,7 @@ class PDFId(ServiceBase):
         parts = pdfparser_result.get("parts", None)
         # Only extract if less than 10
         if parts:
-            if len(parts) < 10 or deep_scan:
+            if len(parts) < 2 or deep_scan:
                 idx = 0
                 for p in sorted(parts):
                     if "Type: /ObjStm" in p:
