@@ -855,12 +855,14 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
         filtered = object.Stream(filt == True)
         if filtered == []:
             filtered = ''
-        try:
-            with open(dump, 'wb') as f:
-                f.write(C2BIP3(filtered))
-            res += "Object extracted. See extracted files."
-        except:
-            errors.add('Error writing file %s' % dump)
+        fdata = C2BIP3(filtered)
+        if len(fdata) > 200:
+            try:
+                with open(dump, 'wb') as f:
+                    f.write(C2BIP3(filtered))
+                res += "Object extracted. See extracted files."
+            except:
+                errors.add('Error writing file %s' % dump)
     return res, errors
 
 def Canonicalize(sIn):
