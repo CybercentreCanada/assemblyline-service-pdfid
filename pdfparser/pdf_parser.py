@@ -859,7 +859,7 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
         if len(fdata) > 200:
             try:
                 with open(dump, 'wb') as f:
-                    f.write(C2BIP3(filtered))
+                    f.write(fdata)
                 res += "Object extracted. See extracted files."
             except:
                 errors.add('Error writing file %s' % dump)
