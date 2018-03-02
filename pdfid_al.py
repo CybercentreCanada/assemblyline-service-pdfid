@@ -73,24 +73,31 @@ class PDFId(ServiceBase):
         if len(pdfid_result) == 0:
             pdfidres.add_line("No results generated for file. Please see errors.")
         else:
-            version = pdfid_result.get("PDFID", None)
-            if version:
-                pdfidres.add_line(version[0])
-            properties = pdfid_result.get("Properties", None)
-            if properties:
-                pres = ResultSection(title_text="PDF Properties", score=SCORE.NULL, parent=pdfidres)
-                for plist in properties:
-                    pres.add_line("{0}: {1}" .format(plist[0], plist[1]))
-                    if plist[0] == "/ModDate":
-                        pres.add_tag(TAG_TYPE['PDF_DATE_MOD'], plist[1], TAG_WEIGHT['MED'])
-                    elif plist[0] == "/CreationDate":
-                        pres.add_tag(TAG_TYPE['PDF_DATE_CREATION'], plist[1], TAG_WEIGHT['MED'])
-                    elif plist[0] == "/LastModified":
-                        pres.add_tag(TAG_TYPE['PDF_DATE_LASTMODIFIED'], plist[1], TAG_WEIGHT['MED'])
-                    elif plist[0] == "/SourceModified":
-                        pres.add_tag(TAG_TYPE['PDF_DATE_SOURCEMODIFIED'], plist[1], TAG_WEIGHT['MED'])
-                    elif plist[0] == "/pdfx":
-                        pres.add_tag(TAG_TYPE['PDF_DATE_PDFX'], plist[1], TAG_WEIGHT['MED'])
+            # Do not run for objstms, which are being analyzed when get_malform == False
+            if get_malform:
+                version = pdfid_result.get("PDFID", None)
+                if version:
+                    pdfidres.add_line(version[0])
+                properties = pdfid_result.get("Properties", None)
+                if properties:
+                    pres = ResultSection(title_text="PDF Properties", score=SCORE.NULL, parent=pdfidres)
+                    for plist in properties:
+                        pres.add_line("{0}: {1}" .format(plist[0], plist[1]))
+                        if plist[0] == "/ModDate":
+                            pres.add_tag(TAG_TYPE['PDF_DATE_MOD'], plist[1], TAG_WEIGHT['MED'])
+                        elif plist[0] == "/CreationDate":
+                            pres.add_tag(TAG_TYPE['PDF_DATE_CREATION'], plist[1], TAG_WEIGHT['MED'])
+                        elif plist[0] == "/LastModified":
+                            pres.add_tag(TAG_TYPE['PDF_DATE_LASTMODIFIED'], plist[1], TAG_WEIGHT['MED'])
+                        elif plist[0] == "/SourceModified":
+                            pres.add_tag(TAG_TYPE['PDF_DATE_SOURCEMODIFIED'], plist[1], TAG_WEIGHT['MED'])
+                        elif plist[0] == "/pdfx":
+                            pres.add_tag(TAG_TYPE['PDF_DATE_PDFX'], plist[1], TAG_WEIGHT['MED'])
+                entropy = pdfid_result.get("Entropy", None)
+                if entropy:
+                    enres = ResultSection(title_text="Entropy", score=SCORE.NULL, parent=pdfidres)
+                    for enlist in entropy:
+                        enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
             flags = pdfid_result.get("Flags", None)
             if flags:
                 fres = ResultSection(title_text="PDF Keyword Flags", score=SCORE.NULL, parent=pdfidres)
@@ -101,11 +108,6 @@ class PDFId(ServiceBase):
                         fres.add_line("{0}:Count: {1}, Hex-Encoded Count: {2}" .format(flist[0], flist[1], flist[2]))
                     else:
                         fres.add_line("{0}:Count: {1}".format(flist[0], flist[1]))
-            entropy = pdfid_result.get("Entropy", None)
-            if entropy:
-                enres = ResultSection(title_text="Entropy", score=SCORE.NULL, parent=pdfidres)
-                for enlist in entropy:
-                    enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
             plugin = pdfid_result.get("Plugin", None)
             if plugin:
                 plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
@@ -126,30 +128,32 @@ class PDFId(ServiceBase):
         # CALL PDF parser and extract further information
         pdfparserres = ResultSection(title_text="PDF Parser Results", score=SCORE.NULL, parent=res)
         # STATISTICS
-        options = {
-            "stats": True,
-        }
-        try:
-            pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
-        except Exception as e:
-            pdfparser_result = None
-            self.log.debug(e)
+        # Do not run for objstms, which are being analyzed when get_malform == False
+        if get_malform:
+            options = {
+                "stats": True,
+            }
+            try:
+                pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+            except Exception as e:
+                pdfparser_result = None
+                self.log.debug(e)
 
-        if pdfparser_result:
-            if len(pdfparser_result) == 0:
-                pdfparserres.add_line("No statistical results generated for file. Please see errors.")
-            else:
-                version = pdfparser_result.get("version", None)
-                if version:
-                    pdfparserres.add_line(version[0])
-                stats = pdfparser_result.get("stats", None)
-                if stats:
-                    sres = ResultSection(title_text="PDF Statistcs", score=SCORE.NULL, parent=pdfparserres,
-                                         body_format=TEXT_FORMAT.MEMORY_DUMP)
-                    for p in stats:
-                        sres.add_line(p)
-            for e in errors:
-                all_errors.add(e)
+            if pdfparser_result:
+                if len(pdfparser_result) == 0:
+                    pdfparserres.add_line("No statistical results generated for file. Please see errors.")
+                else:
+                    version = pdfparser_result.get("version", None)
+                    if version:
+                        pdfparserres.add_line(version[0])
+                    stats = pdfparser_result.get("stats", None)
+                    if stats:
+                        sres = ResultSection(title_text="PDF Statistcs", score=SCORE.NULL, parent=pdfparserres,
+                                             body_format=TEXT_FORMAT.MEMORY_DUMP)
+                        for p in stats:
+                            sres.add_line(p)
+                for e in errors:
+                    all_errors.add(e)
 
         # ELEMENTS
         if request.deep_scan:
@@ -190,7 +194,9 @@ class PDFId(ServiceBase):
                     pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL, parent=pdfparserres,
                                          body_format=TEXT_FORMAT.MEMORY_DUMP)
                     for p in sorted(parts):
-                        pres.add_line(p)
+                        # Do not show for objstms, which are being analyzed when get_malform == False
+                        if get_malform:
+                            pres.add_line(p)
                         if "Type: /EmbeddedFile" in p:
                             getobj = p.split("\n", 1)[0].split(" ")[1]
                             if getobj in embed_extracted:
@@ -208,6 +214,7 @@ class PDFId(ServiceBase):
                             if pdfparser_subresult:
                                 files = pdfparser_subresult.get("files", None)
                                 if files:
+                                    res.add_tag('FILE_STRING', "EmbeddedFile", weight=0)
                                     embed_extracted.add(getobj)
                                     for f, l in files.iteritems():
                                         if f == 'embedded':
@@ -225,6 +232,7 @@ class PDFId(ServiceBase):
         obj_extract_triage = set()
 
         for keyword in triage_keywords:
+            res.add_tag('FILE_STRING', keyword, weight=0)
             # ObjStms handled differently
             if keyword == 'ObjStm':
                 continue
@@ -440,7 +448,7 @@ class PDFId(ServiceBase):
 
         return res, objstms, all_errors
 
-    def write_objstm(self, path, working_dir, objstm, pbjstm_path):
+    def write_objstm(self, path, working_dir, objstm, objstm_path):
 
         stream_present = False
         header = "%PDF-1.5\x0A%Fake header created by AL PDFID service.\x0A"
@@ -450,7 +458,7 @@ class PDFId(ServiceBase):
 
         options = {
             "object": objstm,
-            "dump": pbjstm_path,
+            "dump": objstm_path,
             "filter": True,
             "raw": True,
         }
@@ -536,15 +544,15 @@ class PDFId(ServiceBase):
             all_errors = set()
 
             res_txt = "Main Document Results"
-            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur, additional_keywords)
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur,
+                                                             additional_keywords)
             result.add_result(res)
 
             for e in errors:
                 all_errors.add(e)
 
-            # # ObjStms: Treat all ObjStms like a standalone PDF document
+            #  ObjStms: Treat all ObjStms like a standalone PDF document
             if contains_objstms:
-                objres = ResultSection(title_text="Stream Object Results", score=SCORE.NULL)
                 objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
                 obj_cnt = 1
                 for osf in objstm_files:
@@ -557,9 +565,10 @@ class PDFId(ServiceBase):
                         pass
                     res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
                                                                      additional_keywords, get_malform=False)
-                    obj_cnt += 1
-                    objres.add_section(res)
-                result.add_result(objres)
+                    if len(res.tags) > 0:
+                        obj_cnt += 1
+                        result.add_result(res)
+
 
             if len(all_errors) > 0:
                 erres = ResultSection(title_text="Errors Analyzing PDF", score=SCORE.NULL)
