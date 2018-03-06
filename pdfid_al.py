@@ -512,11 +512,11 @@ class PDFId(ServiceBase):
 
         try:
             pdfparser_result, errors = self.get_pdfparser(path, working_dir, options_objstm)
+            parts = pdfparser_result.get("parts", None)
         except Exception as e:
-            pdfparser_result = None
+            parts = None
             self.log.debug(e)
 
-        parts = pdfparser_result.get("parts", None)
         # Only extract if less than 10
         if parts:
             if len(parts) < 2 or deep_scan:
@@ -533,7 +533,7 @@ class PDFId(ServiceBase):
                             objstm_extracted.add(getobj)
                             obj_files.add(obj_file)
 
-            return obj_files
+        return obj_files
 
     def execute(self, request):
         max_size = self.cfg['MAX_PDF_SIZE']
