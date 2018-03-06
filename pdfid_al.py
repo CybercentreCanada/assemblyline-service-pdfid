@@ -251,8 +251,13 @@ class PDFId(ServiceBase):
                     # Trailer will be extracted anyways, try and grab all references anyways -- will be messy
                     if p.startswith("trailer:"):
                         # Grab the content after the keyword
-                        content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
-                        references = re.findall("[0-9]* [0-9]* R", content)
+                        # Check that keyword actually in content
+                        if "/{}" .format(keyword) in p:
+                            try:
+                                content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
+                                references = re.findall("[0-9]* [0-9]* R", content)
+                            except:
+                                pass
                     # If not trailer, should be object
                     elif 'Referencing:' in p:
                         # Grab the content after the keyword
