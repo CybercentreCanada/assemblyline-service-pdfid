@@ -257,7 +257,7 @@ class PDFId(ServiceBase):
                                 content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
                                 references = re.findall("[0-9]* [0-9]* R", content)
                             except:
-                                pass
+                                continue
                     # If not trailer, should be object
                     elif 'Referencing:' in p:
                         # Grab the content after the keyword
