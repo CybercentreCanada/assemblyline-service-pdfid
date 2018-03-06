@@ -269,6 +269,12 @@ class PDFId(ServiceBase):
                                 content = p.split("\n", 3)[3]
                             except:
                                 content = p
+                        # Sometimes the content is the same keyword with references (i.e "/URI /URI 10 0 R"
+                        if content.startswith("/{}" .format(keyword)):
+                            try:
+                                content = re.sub("/{}[ ]*" .format(keyword), "", content, 1)
+                            except:
+                                pass
                         try:
                             references = p.split("\n", 3)[2].replace('Referencing:', '').strip().split(", ")
                         except:
@@ -295,7 +301,7 @@ class PDFId(ServiceBase):
                         # If keyword is Javascript and content starts with '/JS', disregard as 'JS' will be extracted
                         if "JS" in triage_keywords and keyword == "JavaScript" and "/JS" in c[0:5]:
                             continue
-                        if c in references:
+                        if c in references or re.match("[0-9]* [0-9]* R"):
                             try:
                                 ref_obj = c.split(" ", 1)[0]
                                 options = {
