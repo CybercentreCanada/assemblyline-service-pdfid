@@ -248,6 +248,7 @@ class PDFId(ServiceBase):
 
             if pdfparser_result:
                 for p in pdfparser_result['parts']:
+                    coontent = ""
                     # Trailer will be extracted anyways, try and grab all references anyways -- will be messy
                     if p.startswith("trailer:"):
                         # Grab the content after the keyword
