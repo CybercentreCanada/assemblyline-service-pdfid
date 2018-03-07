@@ -248,11 +248,17 @@ class PDFId(ServiceBase):
 
             if pdfparser_result:
                 for p in pdfparser_result['parts']:
+                    coontent = ""
                     # Trailer will be extracted anyways, try and grab all references anyways -- will be messy
                     if p.startswith("trailer:"):
                         # Grab the content after the keyword
-                        content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
-                        references = re.findall("[0-9]* [0-9]* R", content)
+                        # Check that keyword actually in content
+                        if "/{}" .format(keyword) in p:
+                            try:
+                                content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
+                                references = re.findall("[0-9]* [0-9]* R", content)
+                            except:
+                                continue
                     # If not trailer, should be object
                     elif 'Referencing:' in p:
                         # Grab the content after the keyword
@@ -269,6 +275,12 @@ class PDFId(ServiceBase):
                                 content = p.split("\n", 3)[3]
                             except:
                                 content = p
+                        # Sometimes the content is the same keyword with references (i.e "/URI /URI 10 0 R"
+                        if content.startswith("/{}" .format(keyword)):
+                            try:
+                                content = re.sub("/{}[ ]*" .format(keyword), "", content, 1)
+                            except:
+                                pass
                         try:
                             references = p.split("\n", 3)[2].replace('Referencing:', '').strip().split(", ")
                         except:
@@ -295,7 +307,7 @@ class PDFId(ServiceBase):
                         # If keyword is Javascript and content starts with '/JS', disregard as 'JS' will be extracted
                         if "JS" in triage_keywords and keyword == "JavaScript" and "/JS" in c[0:5]:
                             continue
-                        if c in references:
+                        if c in references or re.match("[0-9]* [0-9]* R"):
                             try:
                                 ref_obj = c.split(" ", 1)[0]
                                 options = {
@@ -506,11 +518,11 @@ class PDFId(ServiceBase):
 
         try:
             pdfparser_result, errors = self.get_pdfparser(path, working_dir, options_objstm)
+            parts = pdfparser_result.get("parts", None)
         except Exception as e:
-            pdfparser_result = None
+            parts = None
             self.log.debug(e)
 
-        parts = pdfparser_result.get("parts", None)
         # Only extract if less than 10
         if parts:
             if len(parts) < 2 or deep_scan:
@@ -527,7 +539,7 @@ class PDFId(ServiceBase):
                             objstm_extracted.add(getobj)
                             obj_files.add(obj_file)
 
-            return obj_files
+        return obj_files
 
     def execute(self, request):
         max_size = self.cfg['MAX_PDF_SIZE']
