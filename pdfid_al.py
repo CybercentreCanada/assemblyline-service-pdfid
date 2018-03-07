@@ -307,7 +307,7 @@ class PDFId(ServiceBase):
                         # If keyword is Javascript and content starts with '/JS', disregard as 'JS' will be extracted
                         if "JS" in triage_keywords and keyword == "JavaScript" and "/JS" in c[0:5]:
                             continue
-                        if c in references or re.match("[0-9]* [0-9]* R"):
+                        if c in references or re.match("[0-9]* [0-9]* R", c):
                             try:
                                 ref_obj = c.split(" ", 1)[0]
                                 options = {
