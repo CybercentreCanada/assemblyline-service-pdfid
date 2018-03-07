@@ -384,13 +384,13 @@ class PDFId(ServiceBase):
             carres = ResultSection(title_text="Content of Interest", score=SCORE.NULL, parent=pdfparserres)
             for k, l in sorted(carved_content.iteritems()):
                 carved_obj_idx = 0
-                subres = ResultSection(title_text="From Object {}" .format(k), score=SCORE.NULL, parent=carres)
                 for d in l:
                     for keyw, con in d.iteritems():
-                        subresb = ResultSection(title_text="Content for Keyword hit:  '{}':".format(keyw),
-                                                score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=subres)
+                        subres = ResultSection(title_text="Content for Keyword hit from Object {0}:  '{1}':"
+                                                .format(k, keyw), score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP,
+                                               parent=carres)
                         if len(con) < 500:
-                            subresb.add_line(con)
+                            subres.add_line(con)
                             # Check for IOC content
                             try:
                                 patterns = PatternMatch()
@@ -402,13 +402,13 @@ class PDFId(ServiceBase):
                                     for ty, val in st_value.iteritems():
                                         if val == "":
                                             asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                            subresb.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                            subres.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
                                         else:
                                             ulis = list(set(val))
                                             for v in ulis:
-                                                subresb.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                                subres.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
                         else:
-                            subresb.add_line("Content over 500 bytes, see extracted files".format(keyw))
+                            subres.add_line("Content over 500 bytes, see extracted files".format(keyw))
                             carvf = os.path.join(self.working_directory, "carved_content_obj_{0}_{1}_{2}"
                                                  .format(k, keyw, carved_obj_idx))
                             with open(carvf, 'wb') as f:
