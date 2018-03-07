@@ -485,8 +485,8 @@ class PDFId(ServiceBase):
             if stream_present:
                 files = pdfparser_subresult.get("files", None)
                 if files:
-                    for f, l in files.iteritems():
-                        if f == 'embedded' and len(l) > 0:
+                    for fi, l in files.iteritems():
+                        if fi == 'embedded' and len(l) > 0:
                             objstm_file = l[0]
                             with open(objstm_file, 'r+') as f:
                                 stream = f.read()
