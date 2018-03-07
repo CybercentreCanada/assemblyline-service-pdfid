@@ -249,6 +249,7 @@ class PDFId(ServiceBase):
             if pdfparser_result:
                 for p in pdfparser_result['parts']:
                     content = ""
+                    references = []
                     # Trailer will be extracted anyways, try and grab all references anyways -- will be messy
                     if p.startswith("trailer:"):
                         # Grab the content after the keyword
@@ -284,10 +285,7 @@ class PDFId(ServiceBase):
                         try:
                             references = p.split("\n", 3)[2].replace('Referencing:', '').strip().split(", ")
                         except:
-                            references = []
-                    else:
-                        content = ""
-                        references = []
+                            pass
                     # If no content, then keyword likely points to reference objects, so grab those
                     if content == '':
                         if len(references) > 0:
