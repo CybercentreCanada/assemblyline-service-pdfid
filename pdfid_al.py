@@ -293,14 +293,22 @@ class PDFId(ServiceBase):
                         else:
                             # Something is wrong, drop it.
                             continue
-                    # Multiple references might be in a list, i.e. /Annot # # R vs. /Annots [# # R, # # R]
                     else:
-                        islist = re.match(r"[s]?[ ]?\[([0-9]* [0-9]* R[ ]{0,1})*\]", content)
-                        if islist:
-                            content = re.sub(r"\[|\]", "", islist.group(0).replace("s ", '')
-                                             .replace("R ", "R,")).split(",")
-                        else:
+                        while True:
+                            # Multiple references might be in a list, i.e. /Annot # # R vs. /Annots [# # R # # R]
+                            islist = re.match(r"[s]?[ ]?\[([0-9]* [0-9]* R[ \\rn]{0,8})*\]", content)
+                            if islist:
+                                content = re.sub(r"\[|\]", "", islist.group(0).replace("s ", '')
+                                                 .replace("R ", "R,")).split(",")
+                                break
+                            # References might be with instructions, i.e. [# # R /FitH null]
+                            withinst = re.match(r"[s]?[ \\']{0,3}\[[ ]?([0-9]* [0-9]* R)[ \\rn]{1,8}"
+                                                r"[/a-zA-Z0-9 ]*[ ]?\]", content)
+                            if withinst:
+                                content = [withinst.group(1)]
+                                break
                             content = [content]
+                            break
                     for c in content:
                         # If keyword is Javascript and content starts with '/JS', disregard as 'JS' will be extracted
                         if "JS" in triage_keywords and keyword == "JavaScript" and "/JS" in c[0:5]:
