@@ -856,7 +856,7 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
         if filtered == []:
             filtered = ''
         fdata = C2BIP3(filtered)
-        if len(fdata) > 200:
+        if len(fdata) > 10:
             try:
                 with open(dump, 'wb') as f:
                     f.write(fdata)
