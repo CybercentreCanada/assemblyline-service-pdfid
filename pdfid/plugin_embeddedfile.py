@@ -12,10 +12,10 @@ class cPDFiDEmbeddedFile(cPluginParent):
 
     def Score(self):
         if '/EmbeddedFile' in self.oPDFiD.keywords and self.oPDFiD.keywords['/EmbeddedFile'].count > 0:
-            if self.oPDFiD.keywords['/EmbeddedFile'].hexcode > 0:
-                return 1000, self.hits
-            else:
-                return 50, self.hits
+                if self.oPDFiD.keywords['/EmbeddedFile'].hexcode > 0:
+                    return 1000, self.hits
+                else:
+                    return 50, self.hits
         return 0, self.hits
 
     def Instructions(self, score, hits):
