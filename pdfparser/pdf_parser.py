@@ -1236,6 +1236,7 @@ def PDFParserMain(filename, outdirectory, **kwargs):
     dump = kwargs.get("dump", None)
     get_object_detail = kwargs.get("get_object_detail", False)
     get_malform = kwargs.get("get_malform", True)
+    max_objstm = kwargs.get("max_objstm", 100)
 
     if dump:
         dump = os.path.join(outdirectory, dump)
@@ -1398,9 +1399,13 @@ def PDFParserMain(filename, outdirectory, **kwargs):
                             results['parts'].append(res)
                     elif typ:
                         if EqualCanonical(object.GetType(), optionsType):
-                            res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
-                                                         hsh=hsh, show_stream=show_stream)
-                            results['parts'].append(res)
+                            if search_hits <= max_objstm:
+                                res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
+                                                             hsh=hsh, show_stream=show_stream)
+                                results['parts'].append(res)
+                                search_hits += 1
+                            else:
+                                break
                     elif hsh:
                         results['parts'].append('obj %d %d' % (object.id, object.version))
                         rawContent = FormatOutput(object.content, True)

@@ -15,12 +15,7 @@ class PDFId(ServiceBase):
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
         'ADDITIONAL_KEYS': ['/URI'],
-        'HEURISTICS': [
-            'plugin_embeddedfile',
-            'plugin_nameobfuscation',
-            'plugin_suspicious_properties',
-            'plugin_triage',
-        ],
+        'HEURISTICS': ['plugin_embeddedfile','plugin_nameobfuscation','plugin_suspicious_properties','plugin_triage',],
         'MAX_PDF_SIZE': 3000000,
     }
 
@@ -60,6 +55,7 @@ class PDFId(ServiceBase):
     def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
         triage_keywords = []
         all_errors = set()
+        embed_present = False
         objstms = False
 
         res = ResultSection(title_text=res_txt, score=SCORE.NULL)
@@ -115,6 +111,10 @@ class PDFId(ServiceBase):
                     modres = ResultSection(title_text=pllist[0], score=int(pllist[1]), parent=plres,
                                            body_format=TEXT_FORMAT.MEMORY_DUMP)
                     modres.add_line(pllist[2])
+                    # Check if embedded files are present
+                    if pllist[0] == 'EmbeddedFile':
+                        if int(pllist[1]) > 0:
+                            embed_present = True
                     # Grab suspicious properties for pdfparser
                     if pllist[0] == 'Triage':
                         triage_keywords = [re.sub(r'(\"|:|/)', '', x) for x in
@@ -162,11 +162,17 @@ class PDFId(ServiceBase):
                 "nocanonicalizedoutput": True,
                 "get_malform": get_malform
             }
-        else:
+        elif embed_present:
             options = {
                 "verbose": True,
                 "elements": "ctsi",
                 "type": "/EmbeddedFile",
+                "get_malform": get_malform
+            }
+        else:
+            options = {
+                "verbose": True,
+                "elements": "cst",
                 "get_malform": get_malform
             }
         try:
@@ -230,6 +236,7 @@ class PDFId(ServiceBase):
         # Triage plugin -- search sample for keywords and carve content or extract object (if it contains a stream)
         carved_content = {}  # Format { "objnum": [{keyword: content list}}
         obj_extract_triage = set()
+        jbig_objs = set()
 
         for keyword in triage_keywords:
             res.add_tag('FILE_STRING', keyword, weight=0)
@@ -336,6 +343,8 @@ class PDFId(ServiceBase):
                                             try:
                                                 objnum = sub_p.split("\n", 1)[0].split(" ")[1]
                                                 obj_extract_triage.add(objnum)
+                                                if keyword == "JBIG2Decode":
+                                                    jbig_objs.add(objnum)
                                             except:
                                                 pass
                                         # Or if the object Type is the keyword, grab all referenced objects.
@@ -345,6 +354,8 @@ class PDFId(ServiceBase):
                                                 try:
                                                     objnum = sr.split(" ", 1)[0]
                                                     obj_extract_triage.add(objnum)
+                                                    if keyword == "JBIG2Decode":
+                                                        jbig_objs.add(objnum)
                                                 except:
                                                     pass
                                         # If not, extract object detail in to carved output
@@ -442,11 +453,17 @@ class PDFId(ServiceBase):
             else:
                 continue
 
-            options = {
-                "filter": True,
-                "object": o,
-                "dump": "extracted_obj_{}".format(o),
-            }
+            if o in jbig_objs:
+                options = {
+                    "object": o,
+                    "dump": "extracted_obj_{}".format(o),
+                }
+            else:
+                options = {
+                    "filter": True,
+                    "object": o,
+                    "dump": "extracted_obj_{}".format(o),
+                }
             try:
                 pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
             except Exception as e:
@@ -517,9 +534,14 @@ class PDFId(ServiceBase):
         objstm_extracted = set()
 
         obj_files = set()
+        if deep_scan:
+            max_obst = 100
+        else:
+            max_obst = 3
         options_objstm = {
             "elements": "i",
             "type": "/ObjStm",
+            "max_objstm": max_obst
         }
 
         try:
@@ -529,26 +551,25 @@ class PDFId(ServiceBase):
             parts = None
             self.log.debug(e)
 
-        # Only extract if less than 10
+        # Only extract first 2 if not deep scan
         if parts:
-            if len(parts) < 2 or deep_scan:
-                idx = 0
-                for p in sorted(parts):
-                    if "Type: /ObjStm" in p:
-                        getobj = p.split("\n", 1)[0].split(" ")[1]
-                        if getobj in objstm_extracted:
-                            continue
-                        dump_file = os.path.join(self.working_directory, "objstm_{0}_{1}" .format(getobj, idx))
-                        idx += 1
-                        obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
-                        if obj_file:
-                            objstm_extracted.add(getobj)
-                            obj_files.add(obj_file)
+            idx = 0
+            for p in sorted(parts):
+                if "Type: /ObjStm" in p:
+                    getobj = p.split("\n", 1)[0].split(" ")[1]
+                    if getobj in objstm_extracted:
+                        continue
+                    dump_file = os.path.join(self.working_directory, "objstm_{0}_{1}" .format(getobj, idx))
+                    idx += 1
+                    obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
+                    if obj_file:
+                        objstm_extracted.add(getobj)
+                        obj_files.add(obj_file)
 
         return obj_files
 
     def execute(self, request):
-        max_size = self.cfg['MAX_PDF_SIZE']
+        max_size = self.cfg.get('MAX_PDF_SIZE', 3000000)
         result = Result()
         request.result = result
         if (request.task.size or 0) < max_size or request.deep_scan:
@@ -556,8 +577,9 @@ class PDFId(ServiceBase):
             working_dir = self.working_directory
 
             # CALL PDFID and identify all suspicious keyword streams
-            additional_keywords = self.cfg['ADDITIONAL_KEYS']
-            heur = self.cfg['HEURISTICS']
+            additional_keywords = self.cfg.get('ADDITIONAL_KEYS', ['/URI'])
+            heur = self.cfg.get('HEURISTICS', ['plugin_embeddedfile', 'plugin_nameobfuscation',
+                                               'plugin_suspicious_properties', 'plugin_triage'])
 
             all_errors = set()
 
@@ -581,12 +603,20 @@ class PDFId(ServiceBase):
                         heur.remove("plugin_suspicious_properties")
                     except:
                         pass
+                    try:
+                        heur.remove("plugin_embeddedfile")
+                    except:
+                        pass
+                    try:
+                        heur.remove("plugin_nameobfuscation")
+                    except:
+                        pass
+
                     res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
                                                                      additional_keywords, get_malform=False)
                     if len(res.tags) > 0:
                         obj_cnt += 1
                         result.add_result(res)
-
 
             if len(all_errors) > 0:
                 erres = ResultSection(title_text="Errors Analyzing PDF", score=SCORE.NULL)
