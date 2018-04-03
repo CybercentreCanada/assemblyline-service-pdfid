@@ -1392,6 +1392,7 @@ def PDFParserMain(filename, outdirectory, **kwargs):
                             if len(err) > 0:
                                 for e in err:
                                     errors.add("Object extraction error: {}" .format(e))
+                            break
                     elif reference:
                         if object.References(reference):
                             res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
