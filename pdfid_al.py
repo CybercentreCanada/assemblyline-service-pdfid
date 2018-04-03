@@ -392,14 +392,16 @@ class PDFId(ServiceBase):
                     all_errors.add(e)
 
         # Add carved content to result output
-        if len(carved_content) > 0:
+        if len(carved_content) > 0 or len(jbig_objs) > 0:
             carres = ResultSection(title_text="Content of Interest", score=SCORE.NULL, parent=pdfparserres)
-            if len(jbig_objs) > 0:
+
+        if len(jbig_objs) > 0:
                 jbigres =ResultSection(title_text="The following Object IDs were extracted unfiltered as "
                                                   "JBIG2Decode keyword detected:",
                                        score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
                 for jo in jbig_objs:
                     jbigres.add_line(jo)
+        if len(carved_content) > 0:
             for k, l in sorted(carved_content.iteritems()):
                 carved_obj_idx = 0
                 for d in l:
