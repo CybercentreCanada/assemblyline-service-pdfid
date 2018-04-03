@@ -42,12 +42,6 @@ class cPDFiDTriage(cPluginParent):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 20
-        if self.oPDFiD.keywords['obj'].count != self.oPDFiD.keywords['endobj'].count:
-            score += 50
-            self.hits.add("obj/endobj")
-        if self.oPDFiD.keywords['stream'].count != self.oPDFiD.keywords['endstream'].count:
-            score += 50
-            self.hits.add("stream/endstream")
         return score, self.hits
 
     def Instructions(self, score, hits):
@@ -71,9 +65,7 @@ class cPDFiDTriage(cPluginParent):
             '/XFA': '"/XFA": indicates XML Forms Architecture. These can be used to hide malicious code.\n',
             '/Colors > 2^24': '"/Colors > 2^24": hits when the number of colors is expressed with more than 3 bytes.\n',
             '/ObjStm': '"/ObjStm": sample contains object stream(s). Can be used to obfuscate objects.\n',
-            '/URI': '"/URI": sample contains URLs.\n',
-            'obj/endobj': 'Sample "obj" keyword count does not equal "endobj" keyword count.\n',
-            'stream/endstream': 'Sample "stream" keyword count does not equal "endstream" count.\n',
+            '/URI': '"/URI": sample contains URLs.\n'
         }
 
         message = "The following keywords have been flagged in this sample:\n"

@@ -8,26 +8,32 @@ class cPDFiDSuspiciousProperties(cPluginParent):
 
     def __init__(self, oPDFiD):
         self.oPDFiD = oPDFiD
-        self.hits = []
+        self.hits = set()
 
     def Score(self):
         score = 0
         # Entropy. Typically data outside of streams contain dictionaries & pdf entities (mostly all ASCII text).
         if self.oPDFiD.non_stream_entropy > 6:
             score += 500
-            self.hits.append("entropy")
+            self.hits.add("entropy")
         # Pages. Many malicious PDFs will contain only one page.
         if '/Page' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Page'].count == 1:
             score += 50
-            self.hits.append("page")
+            self.hits.add("page")
         # Characters after last %%EOF.
         if self.oPDFiD.last_eof_bytes > 100:
             if self.oPDFiD.last_eof_bytes > 499:
                 score += 500
-                self.hits.append("eof5")
+                self.hits.add("eof5")
             else:
                 score += 100
-                self.hits.append("eof1")
+                self.hits.add("eof1")
+        if self.oPDFiD.keywords['obj'].count != self.oPDFiD.keywords['endobj'].count:
+            score += 50
+            self.hits.add("obj/endobj")
+        if self.oPDFiD.keywords['stream'].count != self.oPDFiD.keywords['endstream'].count:
+            score += 50
+            self.hits.add("stream/endstream")
 
         return score, self.hits
 
@@ -39,6 +45,8 @@ class cPDFiDSuspiciousProperties(cPluginParent):
             'eof1': 'Over 100 characters after last %%EOF (Score 100).\n',
             'eof5': 'Over 500 characters after last %%EOF (Score 500).\n',
             'page': "Page count of 1 (Score 50)\n",
+            'obj/endobj': 'Sample "obj" keyword count does not equal "endobj" keyword count (Score 50).\n',
+            'stream/endstream': 'Sample "stream" keyword count does not equal "endstream" count (Score 50).\n',
         }
 
         message = ""
