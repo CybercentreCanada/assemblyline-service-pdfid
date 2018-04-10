@@ -21,14 +21,37 @@ class cPDFiDTriage(cPluginParent):
         Modified by CSE to fit ASSEMBLYLINE Service
         """
         score = 0
-        for keyword in ('/JS', '/JavaScript', '/AA', '/OpenAction', '/JBIG2Decode', '/Launch', '/Colors > 2^24'):
-            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
-                self.hits.add(keyword)
-                score += 150
-        for keyword in ('/AcroForm', '/RichMedia', '/XFA'):
+        # Javascript - separated so we do not double-score
+        if '/JS' in self.oPDFiD.keywords and self.oPDFiD.keywords['/JS'].count > 0:
+            self.hits.add('/JS')
+        if '/JavaScript' in self.oPDFiD.keywords and self.oPDFiD.keywords['/JavaScript'].count > 0:
+            self.hits.add('/JavaScript')
+        if self.oPDFiD.keywords['/JavaScript'].count > 0 or self.oPDFiD.keywords['/JS'].count > 0:
+            score += 100
+        for keyword in ('/JBIG2Decode', '/Colors > 2^24'):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 50
+        # Auto open/Launch - separated so we do not double-score
+        if '/AA' in self.oPDFiD.keywords and self.oPDFiD.keywords['/AA'].count > 0:
+            self.hits.add('/AA')
+        if '/OpenAction' in self.oPDFiD.keywords and self.oPDFiD.keywords['/OpenAction'].count > 0:
+            self.hits.add('/OpenAction')
+        if '/Launch' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Launch'].count > 0:
+            self.hits.add('/Launch')
+        if self.oPDFiD.keywords['/AA'].count > 0 or self.oPDFiD.keywords['/OpenAction'].count > 0 \
+                or self.oPDFiD.keywords['/Launch'].count > 0:
+            score += 50
+        # Forms, Flash, XFA
+        for keyword in ('/AcroForm', '/RichMedia', '/XFA'):
+            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
+                self.hits.add(keyword)
+                score += 25
+        # Encrypted content
+        for keyword in ['/Encrypt']:
+            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
+                self.hits.add(keyword)
+                score += 25
         # Other content to flag for PDFParser to extract, but not to score
         for keyword in ['/Annot']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
@@ -38,10 +61,10 @@ class cPDFiDTriage(cPluginParent):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 1
-        for keyword in ('/URI', '/Encrypt'):
+        for keyword in ['/URI']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-                score += 20
+                score += 1
         return score, self.hits
 
     def Instructions(self, score, hits):
