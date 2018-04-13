@@ -725,8 +725,8 @@ class PDFId(ServiceBase):
             working_dir = self.working_directory
 
             # CALL PDFID and identify all suspicious keyword streams
-            additional_keywords = self.cfg.get('ADDITIONAL_KEYS', ['/URI'])
-            heur = self.SERVICE_DEFAULT_CONFIG['HEURISTICS']
+            additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
+            heur = self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS'])
 
             all_errors = set()
 
