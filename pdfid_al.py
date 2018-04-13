@@ -86,7 +86,12 @@ class PDFId(ServiceBase):
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
         'ADDITIONAL_KEYS': ['/URI'],
-        'HEURISTICS': ['plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties', 'plugin_triage'],
+        'HEURISTICS': [
+            'plugin_embeddedfile',
+            'plugin_nameobfuscation',
+            'plugin_suspicious_properties',
+            'plugin_triage'
+        ],
         'MAX_PDF_SIZE': 3000000,
     }
 
