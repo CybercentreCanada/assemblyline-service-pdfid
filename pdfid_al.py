@@ -721,7 +721,7 @@ class PDFId(ServiceBase):
 
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', ['/URI'])
-            heur = self.cfg.get('HEURISTICS', [ 'plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties', 'plugin_triage'])
+            heur = self.cfg.get('HEURISTICS', ['plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties', 'plugin_triage'])
 
             all_errors = set()
 
