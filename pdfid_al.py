@@ -682,10 +682,12 @@ class PDFId(ServiceBase):
         objstm_extracted = set()
 
         obj_files = set()
+
+        # Only extract first 2 if not deep scan
         if deep_scan:
             max_obst = 100
         else:
-            max_obst = 3
+            max_obst = 1  # Really 2
         options_objstm = {
             "elements": "i",
             "type": "/ObjStm",
@@ -698,8 +700,6 @@ class PDFId(ServiceBase):
         except Exception as e:
             parts = None
             self.log.debug(e)
-
-        # Only extract first 2 if not deep scan
         if parts:
             idx = 0
             for p in sorted(parts):
