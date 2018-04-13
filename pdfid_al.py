@@ -5,7 +5,15 @@ from assemblyline.al.common.result import Result, ResultSection, TEXT_FORMAT
 from assemblyline.al.common.result import SCORE, TAG_TYPE, TAG_WEIGHT
 from assemblyline.al.service.base import ServiceBase
 
+os = None
+pdid = None
+pdfparser = None
+re = None
+PatternMatch = None
+unicodedata = None
 
+
+# noinspection PyBroadException,PyCallingNonCallable
 class PDFId(ServiceBase):
     AL_PDFID_001 = Heuristic("AL_PDFID_001", "PDF_AutoOpen", "document/pdf",
                              dedent("""\
@@ -27,23 +35,44 @@ class PDFId(ServiceBase):
                              dedent("""\
                                         looking for /RichMedia.  This can be use to embed Flash in a PDF
                                         """))
-    AL_PDFID_006 = Heuristic("AL_PDFID_006", "High Entropy", "document/pdf",
+    # Commented heuristics are not reported anymore but are left in the code because they should not be reused
+    # AL_PDFID_006 = Heuristic("AL_PDFID_006", "PDF Date Modified", "document/pdf",
+    #                          dedent("""\
+    #                                 Date tag is ModDate. Will output the date value.
+    #                                 """))
+    # AL_PDFID_007 = Heuristic("AL_PDFID_007", "PDF Date Creation", "document/pdf",
+    #                          dedent("""\
+    #                                 Date tag is CreationDate. Will output the date value.
+    #                                 """))
+    # AL_PDFID_008 = Heuristic("AL_PDFID_008", "PDF Date Last Modified", "document/pdf",
+    #                          dedent("""\
+    #                                 Date tag is LastModified. Will output the date value.
+    #                                 """))
+    # AL_PDFID_009 = Heuristic("AL_PDFID_009", "PDF Date Source Modified", "document/pdf",
+    #                          dedent("""\
+    #                                 Date tag is SourceModified. Will output the date value.
+    #                                 """))
+    # AL_PDFID_010 = Heuristic("AL_PDFID_010", "PDF Date PDFX", "document/pdf",
+    #                          dedent("""\
+    #                                 Date tag is pdfx. Will output the date value.
+    #                                 """))
+    AL_PDFID_011 = Heuristic("AL_PDFID_011", "Encrypt", "document/pdf",
+                             dedent("""\
+                                            Found the /Encrypt string in the file. Will need to figure out why.
+                                            """))
+    AL_PDFID_012 = Heuristic("AL_PDFID_012", "High Entropy", "document/pdf",
                              dedent("""\
                                         Outside stream entropy of > 5. Possible hidden content.
                                         """))
-    AL_PDFID_007 = Heuristic("AL_PDFID_007", "Obj/Endobj Mismatch", "document/pdf",
+    AL_PDFID_013 = Heuristic("AL_PDFID_013", "Obj/Endobj Mismatch", "document/pdf",
                              dedent("""\
                                         Sample "obj" keyword count does not equal "endobj" keyword count.
                                         """))
-    AL_PDFID_008 = Heuristic("AL_PDFID_008", "Stream/Endstream Mismatch", "document/pdf",
+    AL_PDFID_014 = Heuristic("AL_PDFID_014", "Stream/Endstream Mismatch", "document/pdf",
                              dedent("""\
                                         Sample "stream" keyword count does not equal "endstream" count.
                                         """))
-    AL_PDFID_009 = Heuristic("AL_PDFID_009", "Encrypt", "document/pdf",
-                             dedent("""\
-                                        Found the /Encrypt string in the file. Will need to figure out why.
-                                        """))
-    AL_PDFID_010 = Heuristic("AL_PDFID_010", "Embedded file", "document/pdf",
+    AL_PDFID_015 = Heuristic("AL_PDFID_015", "Embedded file", "document/pdf",
                              dedent("""\
                                         Sample contains embedded files.
                                         """))
@@ -57,13 +86,19 @@ class PDFId(ServiceBase):
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
         'ADDITIONAL_KEYS': ['/URI'],
-        'HEURISTICS': ['plugin_embeddedfile','plugin_nameobfuscation','plugin_suspicious_properties','plugin_triage',],
+        'HEURISTICS': [
+            'plugin_embeddedfile',
+            'plugin_nameobfuscation',
+            'plugin_suspicious_properties',
+            'plugin_triage'
+        ],
         'MAX_PDF_SIZE': 3000000,
     }
 
     def __init__(self, cfg=None):
         super(PDFId, self).__init__(cfg)
 
+    # noinspection PyUnresolvedReferences
     def import_service_deps(self):
         global os, pdid, pdfparser, re
         from pdfid import pdfid as pdid
@@ -77,7 +112,8 @@ class PDFId(ServiceBase):
         except ImportError:
             pass
 
-    def get_pdfid(self, path, additional_keywords, options, deep):
+    @staticmethod
+    def get_pdfid(path, additional_keywords, options, deep):
 
         try:
             pdfid_result, errors = pdid.PDFiDMain(path, additional_keywords, options, deep)
@@ -86,7 +122,8 @@ class PDFId(ServiceBase):
 
         return pdfid_result, errors
 
-    def get_pdfparser(self, path, working_dir, options):
+    @staticmethod
+    def get_pdfparser(path, working_dir, options):
         try:
             pdfparser_statresult, errors = pdfparser.PDFParserMain(path, working_dir, **options)
         except Exception as e:
@@ -162,7 +199,7 @@ class PDFId(ServiceBase):
                     modres.add_line(pllist[2])
                     # Check if embedded files are present
                     if pllist[0] == 'EmbeddedFile':
-                        hrs.add(PDFId.AL_PDFID_010)
+                        hrs.add(PDFId.AL_PDFID_015)
                         if int(pllist[1]) > 0:
                             embed_present = True
                     # Grab suspicious properties for pdfparser
@@ -174,11 +211,11 @@ class PDFId(ServiceBase):
                         if "eof2" in pllist[2] or "eof5" in pllist[2]:
                             hrs.add(PDFId.AL_PDFID_002)
                         if "entropy" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_006)
+                            hrs.add(PDFId.AL_PDFID_012)
                         if "obj/endobj" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_007)
+                            hrs.add(PDFId.AL_PDFID_013)
                         if "stream/endstream" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_008)
+                            hrs.add(PDFId.AL_PDFID_014)
 
         for e in errors:
             all_errors.add(e)
@@ -232,7 +269,7 @@ class PDFId(ServiceBase):
                 if keyword == 'RichMedia':
                     hrs.add(PDFId.AL_PDFID_005)
                 if keyword == 'Encrypt':
-                    hrs.add(PDFId.AL_PDFID_009)
+                    hrs.add(PDFId.AL_PDFID_011)
 
                 res.add_tag('FILE_STRING', keyword, weight=0)
                 # ObjStms handled differently
@@ -260,7 +297,7 @@ class PDFId(ServiceBase):
                                 try:
                                     content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
                                     references = re.findall("[0-9]* [0-9]* R", content)
-                                except:
+                                except Exception:
                                     continue
                         # If not trailer, should be object
                         elif 'Referencing:' in p:
@@ -268,25 +305,25 @@ class PDFId(ServiceBase):
                             if '>>++>>' in p:
                                 try:
                                     content = p.split(keyword, 1)[1].replace('>>++>>', '').strip()
-                                except:
+                                except Exception:
                                     try:
                                         content = p.split("\n", 3)[3]
-                                    except:
+                                    except Exception:
                                         content = p
                             else:
                                 try:
                                     content = p.split("\n", 3)[3]
-                                except:
+                                except Exception:
                                     content = p
                             # Sometimes the content is the same keyword with references (i.e "/URI /URI 10 0 R"
                             if content.startswith("/{}" .format(keyword)):
                                 try:
                                     content = re.sub("/{}[ ]*" .format(keyword), "", content, 1)
-                                except:
+                                except Exception:
                                     pass
                             try:
                                 references = p.split("\n", 3)[2].replace('Referencing:', '').strip().split(", ")
-                            except:
+                            except Exception:
                                 pass
                         # Special condition for JBIG2Decode
                         if keyword == "JBIG2Decode" and "/Filter" in p and "Contains stream" in p:
@@ -336,28 +373,29 @@ class PDFId(ServiceBase):
                                         pdfparser_subresult, err = self.get_pdfparser(path, working_dir, options)
                                     except Exception as e:
                                         pdfparser_subresult = None
+                                        err = []
                                         self.log.debug(e)
 
                                     if pdfparser_subresult:
                                         for sub_p in pdfparser_subresult['parts']:
                                             sub_references = sub_p.split("\n", 3)[2].replace('Referencing:', '')\
                                                 .strip().split(", ")
-                                            type = sub_p.split("\n", 2)[1].replace('Type:', '').strip().replace("/", "")
+                                            ptyp = sub_p.split("\n", 2)[1].replace('Type:', '').strip().replace("/", "")
                                             # If the object contains a stream, extract the object.
                                             if "Contains stream" in sub_p:
                                                 try:
                                                     objnum = sub_p.split("\n", 1)[0].split(" ")[1]
                                                     obj_extract_triage.add(objnum)
-                                                except:
+                                                except Exception:
                                                     pass
                                             # Or if the object Type is the keyword, grab all referenced objects.
                                             elif sub_references[0] != '' and len(sub_references) >= 1 \
-                                                    and type == keyword:
+                                                    and ptyp == keyword:
                                                 for sr in sub_references:
                                                     try:
                                                         objnum = sr.split(" ", 1)[0]
                                                         obj_extract_triage.add(objnum)
-                                                    except:
+                                                    except Exception:
                                                         pass
                                             # If not, extract object detail in to carved output
                                             elif pdfparser_subresult['obj_details'] != "":
@@ -369,17 +407,17 @@ class PDFId(ServiceBase):
                                                     else:
                                                         carved_content[objnum] = \
                                                             [{keyword: pdfparser_subresult['obj_details']}]
-                                                except:
+                                                except Exception:
                                                     continue
 
                                     for e in err:
                                         errors.add(e)
-                                except:
+                                except Exception:
                                     # If none of that work, just extract the original object for examination.
                                     try:
                                         objnum = p.split("\n", 1)[0].split(" ")[1]
                                         obj_extract_triage.add(objnum)
-                                    except:
+                                    except Exception:
                                         pass
                             # If content does not look like a reference:
                             else:
@@ -402,11 +440,13 @@ class PDFId(ServiceBase):
             # Add carved content to result output
             if len(carved_content) > 0 or len(jbig_objs) > 0:
                 carres = ResultSection(title_text="Content of Interest", score=SCORE.NULL, parent=pdfparserres)
+            else:
+                carres = None
 
             if len(jbig_objs) > 0:
-                    jbigres =ResultSection(title_text="The following Object IDs were extracted unfiltered as "
-                                                      "JBIG2Decode keyword detected:",
-                                           score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
+                    jbigres = ResultSection(title_text="The following Object IDs were extracted unfiltered as "
+                                                       "JBIG2Decode keyword detected:",
+                                            score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
                     for jo in jbig_objs:
                         jbigres.add_line(jo)
             if len(carved_content) > 0:
@@ -422,7 +462,7 @@ class PDFId(ServiceBase):
                                 # Check for IOC content
                                 try:
                                     patterns = PatternMatch()
-                                except:
+                                except Exception:
                                     patterns = None
                                 if patterns:
                                     st_value = patterns.ioc_match(con, bogon_ip=True)
@@ -520,7 +560,9 @@ class PDFId(ServiceBase):
                                                                                   options)
                                 except Exception as e:
                                     pdfparser_subresult = None
+                                    err = []
                                     self.log.debug(e)
+
                                 if pdfparser_subresult:
                                     files = pdfparser_subresult.get("files", None)
                                     if files:
@@ -684,7 +726,11 @@ class PDFId(ServiceBase):
 
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', ['/URI'])
-            heur = self.cfg.get('HEURISTICS', ['plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties', 'plugin_triage'])
+            heur = self.cfg.get('HEURISTICS', [
+                'plugin_embeddedfile',
+                'plugin_nameobfuscation',
+                'plugin_suspicious_properties',
+                'plugin_triage'])
 
             all_errors = set()
 
@@ -708,15 +754,15 @@ class PDFId(ServiceBase):
                     # It is going to look suspicious as the service created the PDF
                     try:
                         heur.remove("plugin_suspicious_properties")
-                    except:
+                    except Exception:
                         pass
                     try:
                         heur.remove("plugin_embeddedfile")
-                    except:
+                    except Exception:
                         pass
                     try:
                         heur.remove("plugin_nameobfuscation")
-                    except:
+                    except Exception:
                         pass
 
                     res, heurs, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
