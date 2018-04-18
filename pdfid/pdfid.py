@@ -821,8 +821,9 @@ def PDFiDMain(filename, additional_keywords, heuristics, deep_scan=False):
     plugins = []
 
     all_names = False
-    if deep_scan:
-        all_names = True
+    # This appears to report on all keywords, which output is extensive, turning off
+    #if deep_scan:
+        #all_names = True
 
     options = {
         'all': all_names,
