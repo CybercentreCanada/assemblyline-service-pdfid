@@ -132,7 +132,7 @@ class PDFId(ServiceBase):
         return pdfparser_statresult, errors
 
     def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
-        triage_keywords = []
+        triage_keywords = set()
         all_errors = set()
         embed_present = False
         objstms = False
@@ -188,6 +188,8 @@ class PDFId(ServiceBase):
                         fres.add_line("{0}:Count: {1}, Hex-Encoded Count: {2}" .format(flist[0], flist[1], flist[2]))
                     else:
                         fres.add_line("{0}:Count: {1}".format(flist[0], flist[1]))
+                    if flist[0] in additional_keywords:
+                        triage_keywords.add(flist[0].replace("/", "", 1))
             plugin = pdfid_result.get("Plugin", None)
             if plugin:
                 # If any plugin results, run pdfparse
@@ -204,8 +206,8 @@ class PDFId(ServiceBase):
                             embed_present = True
                     # Grab suspicious properties for pdfparser
                     if pllist[0] == 'Triage':
-                        triage_keywords = [re.sub(r'(\"|:|/)', '', x) for x in
-                                           re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE)]
+                        triage_keywords.update(re.sub(r'(\"|:|/)', '', x) for x in
+                                           re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE))
                     # Add heuristics for suspicious properties
                     if pllist[0] == 'Suspicious Properties':
                         if "eof2" in pllist[2] or "eof5" in pllist[2]:
