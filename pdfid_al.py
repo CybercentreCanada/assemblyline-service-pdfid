@@ -206,8 +206,8 @@ class PDFId(ServiceBase):
                             embed_present = True
                     # Grab suspicious properties for pdfparser
                     if pllist[0] == 'Triage':
-                        triage_keywords.update(re.sub(r'(\"|:|/)', '', x) for x in
-                                           re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE))
+                        triage_keywords.update([re.sub(r'(\"|:|/)', '', x) for x in
+                                           re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE)])
                     # Add heuristics for suspicious properties
                     if pllist[0] == 'Suspicious Properties':
                         if "eof2" in pllist[2] or "eof5" in pllist[2]:
