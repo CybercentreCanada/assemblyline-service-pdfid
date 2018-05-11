@@ -85,7 +85,9 @@ class PDFId(ServiceBase):
     SERVICE_CPU_CORES = 1
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
-        'ADDITIONAL_KEYS': ['/URI'],
+        'ADDITIONAL_KEYS': [
+            '/URI'
+        ],
         'HEURISTICS': [
             'plugin_embeddedfile',
             'plugin_nameobfuscation',
