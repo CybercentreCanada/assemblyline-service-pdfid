@@ -82,7 +82,7 @@ class PDFId(ServiceBase):
     SERVICE_ENABLED = True
     SERVICE_REVISION = ServiceBase.parse_revision('$Id$')
     SERVICE_VERSION = '1'
-    SERVICE_CPU_CORES = 1
+    SERVICE_CPU_CORES = 0.5
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
         'ADDITIONAL_KEYS': [
