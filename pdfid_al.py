@@ -229,7 +229,7 @@ class PDFId(ServiceBase):
 
         if run_pdfparse:
             # CALL PDF parser and extract further information
-            pdfparserres = ResultSection(title_text="PDF Parser Results", score=SCORE.NULL, parent=res)
+            pdfparserres = ResultSection(title_text="PDF Parser Results", score=SCORE.NULL)
             # STATISTICS
             # Do not run for objstms, which are being analyzed when get_malform == False
             if get_malform:
@@ -490,149 +490,152 @@ class PDFId(ServiceBase):
                                 carved_obj_idx += 1
 
             # ELEMENTS
-            if request.deep_scan:
-                options = {
-                    "verbose": True,
-                    "nocanonicalizedoutput": True,
-                    "get_malform": get_malform
-                }
-            elif embed_present:
-                options = {
-                    "verbose": True,
-                    "elements": "ctsi",
-                    "type": "/EmbeddedFile",
-                    "get_malform": get_malform
-                }
-            else:
-                options = {
-                    "verbose": True,
-                    "elements": "cst",
-                    "get_malform": get_malform
-                }
-            try:
-                pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
-            except Exception as e:
-                pdfparser_result = None
-                self.log.debug(e)
-
-            embed_extracted = set()
-            if pdfparser_result:
-                if len(pdfparser_result) == 0:
-                    pdfparserres.add_line("No structure information generated for file. Please see errors.")
+            # Do not show for objstms
+            if get_malform:
+                if request.deep_scan:
+                    options = {
+                        "verbose": True,
+                        "nocanonicalizedoutput": True,
+                        "get_malform": get_malform
+                    }
+                elif embed_present:
+                    options = {
+                        "verbose": True,
+                        "elements": "ctsi",
+                        "type": "/EmbeddedFile",
+                        "get_malform": get_malform
+                    }
                 else:
-                    # PDF Parser will write any malformed content over 100 bytes to a file
-                    files = pdfparser_result.get("files", None)
-                    if files:
-                        for f, l in files.iteritems():
-                            if f == 'malformed':
-                                for i in l:
-                                    request.add_extracted(i,
-                                                          "Extracted malformed content in PDF Parser Analysis.")
+                    options = {
+                        "verbose": True,
+                        "elements": "cst",
+                        "get_malform": get_malform
+                    }
+                try:
+                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                except Exception as e:
+                    pdfparser_result = None
+                    self.log.debug(e)
 
-                    parts = pdfparser_result.get("parts", None)
-                    # Extract any embedded files
-                    if parts:
-                        # Extract max of 5 files in regular mode
-                        if request.deep_scan:
-                            max_extract = 100
-                        else:
-                            max_extract = 5
-                        pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
-                                             parent=pdfparserres,
-                                             body_format=TEXT_FORMAT.MEMORY_DUMP)
-                        idx = 0
-                        for p in sorted(parts):
-                            # Do not show for objstms, which are being analyzed when get_malform == False
-                            if get_malform:
+                embed_extracted = set()
+                if pdfparser_result:
+                    if len(pdfparser_result) == 0:
+                        pdfparserres.add_line("No structure information generated for file. Please see errors.")
+                    else:
+                        # PDF Parser will write any malformed content over 100 bytes to a file
+                        files = pdfparser_result.get("files", None)
+                        if files:
+                            for f, l in files.iteritems():
+                                if f == 'malformed':
+                                    for i in l:
+                                        request.add_extracted(i,
+                                                              "Extracted malformed content in PDF Parser Analysis.")
+
+                        parts = pdfparser_result.get("parts", None)
+                        # Extract any embedded files
+                        if parts:
+                            # Extract max of 5 files in regular mode
+                            if request.deep_scan:
+                                max_extract = 100
+                            else:
+                                max_extract = 5
+                            pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
+                                                 parent=pdfparserres,
+                                                 body_format=TEXT_FORMAT.MEMORY_DUMP)
+                            idx = 0
+                            for p in sorted(parts):
                                 pres.add_line(p)
-                            if "Type: /EmbeddedFile" in p and (idx <= max_extract):
-                                getobj = p.split("\n", 1)[0].split(" ")[1]
-                                if getobj in embed_extracted:
-                                    continue
-                                if getobj in jbig_objs:
-                                    options = {
-                                        "object": getobj,
-                                        "dump": "embedded_file_obj_{0}".format(getobj),
-                                    }
-                                else:
-                                    options = {
-                                        "filter": True,
-                                        "object": getobj,
-                                        "dump": "embedded_file_obj_{0}".format(getobj),
-                                    }
-                                try:
-                                    pdfparser_subresult, err = self.get_pdfparser(path, working_dir,
-                                                                                  options)
-                                except Exception as e:
-                                    pdfparser_subresult = None
-                                    err = []
-                                    self.log.debug(e)
+                                if "Type: /EmbeddedFile" in p and (idx <= max_extract):
+                                    getobj = p.split("\n", 1)[0].split(" ")[1]
+                                    if getobj in embed_extracted:
+                                        continue
+                                    if getobj in jbig_objs:
+                                        options = {
+                                            "object": getobj,
+                                            "dump": "embedded_file_obj_{0}".format(getobj),
+                                        }
+                                    else:
+                                        options = {
+                                            "filter": True,
+                                            "object": getobj,
+                                            "dump": "embedded_file_obj_{0}".format(getobj),
+                                        }
+                                    try:
+                                        pdfparser_subresult, err = self.get_pdfparser(path, working_dir,
+                                                                                      options)
+                                    except Exception as e:
+                                        pdfparser_subresult = None
+                                        err = []
+                                        self.log.debug(e)
 
-                                if pdfparser_subresult:
-                                    files = pdfparser_subresult.get("files", None)
-                                    if files:
-                                        res.add_tag('FILE_STRING', "EmbeddedFile", weight=0)
-                                        embed_extracted.add(getobj)
-                                        for f, l in files.iteritems():
-                                            if f == 'embedded':
-                                                for i in l:
-                                                    request.add_extracted(i,
-                                                                          "Extracted embedded file from obj {} "
-                                                                          "in PDF Parser Analysis.".format(
-                                                                              getobj))
-                                    for e in err:
-                                        all_errors.add(e)
+                                    if pdfparser_subresult:
+                                        files = pdfparser_subresult.get("files", None)
+                                        if files:
+                                            res.add_tag('FILE_STRING', "EmbeddedFile", weight=0)
+                                            embed_extracted.add(getobj)
+                                            for f, l in files.iteritems():
+                                                if f == 'embedded':
+                                                    for i in l:
+                                                        request.add_extracted(i,
+                                                                              "Extracted embedded file from obj {} "
+                                                                              "in PDF Parser Analysis.".format(
+                                                                                  getobj))
+                                        for e in err:
+                                            all_errors.add(e)
 
-                                    idx += 1
-
-                for e in errors:
-                    all_errors.add(e)
-
-            # Extract objects collected from above analysis
-            obj_to_extract = obj_extract_triage - embed_extracted
-            for o in obj_to_extract:
-                # Final check to ensure object has a stream, if not drop it.
-                options = {
-                    "object": o
-                }
-                try:
-                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
-                except Exception as e:
-                    pdfparser_result = None
-                    self.log.debug(e)
-                if pdfparser_result:
-                    if not pdfparser_result['parts'][0].split("\n", 4)[3] == "Contains stream":
-                        continue
-                else:
-                    continue
-
-                if o in jbig_objs:
-                    options = {
-                        "object": o,
-                        "dump": "extracted_obj_{}".format(o),
-                    }
-                else:
-                    options = {
-                        "filter": True,
-                        "object": o,
-                        "dump": "extracted_obj_{}".format(o),
-                    }
-                try:
-                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
-                except Exception as e:
-                    pdfparser_result = None
-                    self.log.debug(e)
-
-                if pdfparser_result:
-                    files = pdfparser_result.get("files", None)
-                    if files:
-                        for f, l in files.iteritems():
-                            if f == 'embedded':
-                                for i in l:
-                                    request.add_extracted(i, "Object {} extracted in PDF Parser Analysis." .format(o))
+                                        idx += 1
 
                     for e in errors:
                         all_errors.add(e)
+
+                # Extract objects collected from above analysis
+                obj_to_extract = obj_extract_triage - embed_extracted
+                for o in obj_to_extract:
+                    # Final check to ensure object has a stream, if not drop it.
+                    options = {
+                        "object": o
+                    }
+                    try:
+                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    except Exception as e:
+                        pdfparser_result = None
+                        self.log.debug(e)
+                    if pdfparser_result:
+                        if not pdfparser_result['parts'][0].split("\n", 4)[3] == "Contains stream":
+                            continue
+                    else:
+                        continue
+
+                    if o in jbig_objs:
+                        options = {
+                            "object": o,
+                            "dump": "extracted_obj_{}".format(o),
+                        }
+                    else:
+                        options = {
+                            "filter": True,
+                            "object": o,
+                            "dump": "extracted_obj_{}".format(o),
+                        }
+                    try:
+                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    except Exception as e:
+                        pdfparser_result = None
+                        self.log.debug(e)
+
+                    if pdfparser_result:
+                        files = pdfparser_result.get("files", None)
+                        if files:
+                            for f, l in files.iteritems():
+                                if f == 'embedded':
+                                    for i in l:
+                                        request.add_extracted(i, "Object {} extracted in PDF Parser Analysis." .format(o))
+
+                        for e in errors:
+                            all_errors.add(e)
+
+            if len(pdfparserres.subsections) > 0:
+                res.add_section(pdfparserres)
 
         return res, hrs, objstms, all_errors
 
