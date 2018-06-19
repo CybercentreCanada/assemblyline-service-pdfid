@@ -4,6 +4,7 @@ from assemblyline.al.common.heuristics import Heuristic
 from assemblyline.al.common.result import Result, ResultSection, TEXT_FORMAT
 from assemblyline.al.common.result import SCORE, TAG_TYPE, TAG_WEIGHT
 from assemblyline.al.service.base import ServiceBase
+from copy import deepcopy
 
 os = None
 pdid = None
@@ -730,7 +731,7 @@ class PDFId(ServiceBase):
 
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
-            heur = self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS'])
+            heur = deepcopy(self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS']))
 
             all_errors = set()
 
