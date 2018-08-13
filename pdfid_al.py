@@ -534,11 +534,11 @@ class PDFId(ServiceBase):
                         parts = pdfparser_result.get("parts", None)
                         # Extract any embedded files
                         if parts:
-                            # Extract max of 5 files in regular mode
+                            # Extract max of 100 files in regular mode
                             if request.deep_scan:
-                                max_extract = 100
+                                max_extract = 500
                             else:
-                                max_extract = 5
+                                max_extract = 100
                             pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
                                                  parent=pdfparserres,
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP)
