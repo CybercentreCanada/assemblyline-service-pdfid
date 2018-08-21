@@ -532,7 +532,8 @@ class PDFId(ServiceBase):
                                                               "Extracted malformed content in PDF Parser Analysis.")
 
                         parts = pdfparser_result.get("parts", None)
-                        # Extract any embedded files
+                        # Extract service will extract the sample's embedded files.
+                        # However we want to make note of them so that they are not extracted again below
                         if parts:
                             # Extract max of 100 files in regular mode
                             if request.deep_scan:
@@ -542,51 +543,11 @@ class PDFId(ServiceBase):
                             pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
                                                  parent=pdfparserres,
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP)
-                            idx = 0
                             for p in sorted(parts):
                                 pres.add_line(p)
-                                if "Type: /EmbeddedFile" in p and (idx <= max_extract):
+                                if "Type: /EmbeddedFile" in p:
                                     getobj = p.split("\n", 1)[0].split(" ")[1]
-                                    if getobj in embed_extracted:
-                                        continue
-                                    if getobj in jbig_objs:
-                                        options = {
-                                            "object": getobj,
-                                            "dump": "embedded_file_obj_{0}".format(getobj),
-                                        }
-                                    else:
-                                        options = {
-                                            "filter": True,
-                                            "object": getobj,
-                                            "dump": "embedded_file_obj_{0}".format(getobj),
-                                        }
-                                    try:
-                                        pdfparser_subresult, err = self.get_pdfparser(path, working_dir,
-                                                                                      options)
-                                    except Exception as e:
-                                        pdfparser_subresult = None
-                                        err = []
-                                        self.log.debug(e)
-
-                                    if pdfparser_subresult:
-                                        files = pdfparser_subresult.get("files", None)
-                                        if files:
-                                            res.add_tag('FILE_STRING', "EmbeddedFile", weight=0)
-                                            embed_extracted.add(getobj)
-                                            for f, l in files.iteritems():
-                                                if f == 'embedded':
-                                                    for i in l:
-                                                        request.add_extracted(i,
-                                                                              "Extracted embedded file from obj {} "
-                                                                              "in PDF Parser Analysis.".format(
-                                                                                  getobj))
-                                        for e in err:
-                                            all_errors.add(e)
-
-                                        idx += 1
-
-                    for e in errors:
-                        all_errors.add(e)
+                                    embed_extracted.add(getobj)
 
                 # Extract objects collected from above analysis
                 obj_to_extract = obj_extract_triage - embed_extracted
@@ -629,7 +590,8 @@ class PDFId(ServiceBase):
                             for f, l in files.iteritems():
                                 if f == 'embedded':
                                     for i in l:
-                                        request.add_extracted(i, "Object {} extracted in PDF Parser Analysis." .format(o))
+                                        request.add_extracted(i, "Object {} extracted in PDF Parser Analysis."
+                                                              .format(o))
 
                         for e in errors:
                             all_errors.add(e)
