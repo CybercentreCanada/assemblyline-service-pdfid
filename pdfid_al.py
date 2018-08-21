@@ -535,11 +535,6 @@ class PDFId(ServiceBase):
                         # Extract service will extract the sample's embedded files.
                         # However we want to make note of them so that they are not extracted again below
                         if parts:
-                            # Extract max of 100 files in regular mode
-                            if request.deep_scan:
-                                max_extract = 500
-                            else:
-                                max_extract = 100
                             pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
                                                  parent=pdfparserres,
                                                  body_format=TEXT_FORMAT.MEMORY_DUMP)
