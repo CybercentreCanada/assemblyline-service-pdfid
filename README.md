@@ -14,15 +14,17 @@ parameter:
 
 ADDITIONAL_KEYS=(Default: \["/URI"])
 
-To add new plugin scripts to PDFID, edit the following configuration parameter:
+To add new plugin scripts to PDFId, edit the following configuration parameter:
 
 HEURISTICS=(Default: \["plugin_embeddedfile", "plugin_nameobfuscation",
 "plugin_suspicious_properties", "plugin_triage])
 
+To change the maximum sample size (in bytes) that the service will process, change this configuration parameter:
+'MAX_PDF_SIZE'=(Default 3000000) *Note:* deep scan mode will ignore this configuration parameter. 
+
 ## Execution
 
-The PDFId service will report the following information for each file
-when present:
+The PDFId service will report the following information for each file when present:
 
 ### File Information
 
@@ -60,7 +62,11 @@ when present:
 - Source Modified Date (AL tag: PDF_DATE_SOURCEMODIFIED)
 
 #### PDFParser
-- Number of:
+
+*Note:* PDFParser will only run on a sample if in deep scan mode, or if PDFId plugins (see below) detected 
+suspicious elements are present in the sample.
+
+- Reports number of:
     - /Comment
     - /XREF
     - /Trailer
@@ -78,15 +84,15 @@ when present:
     - StartXref
 
 - Extracts Suspicious Elements:
-    - Embedded files (as extracted file)
-    - Entire Objects (as extracted file) (determined by PDFId plugins)
+    - Entire Objects (as extracted file) when flagged by PDFId plugins.
     - Specific Object content (in AL result) and will run FrankenStrings
     Patterns against content to search for IOCs (determined by PDFId
-    plugins)
+    plugins).
 
 - ObjStms
-    - Service will attempt to resubmit object streams in samples as PDF
-    files to re-run against PDFId and PDFParser analyzers
+    - Service will attempt to reprocess object streams in samples as PDF
+    files to re-run against PDFId and PDFParser analyzers. If in deep scan mode, a maximum of 100
+    objstms will be reprocessed, otherwise a maximum of two will be reprocessed.
 
 ### PDFId Plugins
 
@@ -123,8 +129,7 @@ required for plugin scripts to work with this AL service:
             if score == 0:
                 return
 
-See source code under "pdfid" folder for examples of plugins already
-used by this service.
+See source code under "pdfid" folder for examples of plugins already used by this service.
 
 
 
