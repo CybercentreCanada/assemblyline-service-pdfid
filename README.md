@@ -14,14 +14,15 @@ parameter:
 
 ADDITIONAL_KEYS=(Default: \["/URI"])
 
-To add new plugin scripts to PDFID, edit the following configuration parameter:
+To add new plugin scripts to PDFId, edit the following configuration parameter:
 
 HEURISTICS=(Default: \["plugin_embeddedfile", "plugin_nameobfuscation",
 "plugin_suspicious_properties", "plugin_triage])
 
 To change the maximum sample size (in bytes) that the service will process, change this configuration parameter:
 'MAX_PDF_SIZE'=(Default 3000000)
-*Note* deep scan mode will ignore this configuration parameter. 
+
+*Note:* deep scan mode will ignore this configuration parameter. 
 
 ## Execution
 
@@ -65,8 +66,8 @@ when present:
 
 #### PDFParser
 
-* Note, PDFParser will only run on sample if in deep scan mode, or if PDFId plugins (see below) detected 
-suspicious elements are present in PDF sample.
+*Note:* PDFParser will only run on a sample if in deep scan mode, or if PDFId plugins (see below) detected 
+suspicious elements are present in the sample.
 
 - Reports number of:
     - /Comment
@@ -86,15 +87,15 @@ suspicious elements are present in PDF sample.
     - StartXref
 
 - Extracts Suspicious Elements:
-    - Entire Objects (as extracted file) (determined by PDFId plugins)
+    - Entire Objects (as extracted file) (when flagged by PDFId plugins)
     - Specific Object content (in AL result) and will run FrankenStrings
     Patterns against content to search for IOCs (determined by PDFId
     plugins)
 
 - ObjStms
-    - Service will attempt to resubmit object streams in samples as PDF
+    - Service will attempt to reprocess object streams in samples as PDF
     files to re-run against PDFId and PDFParser analyzers. If in deep scan mode, a maximum of 100
-    objstms will be resumbmitted, otherwise a maximum of two will be resubmitted.
+    objstms will be reprocessed, otherwise a maximum of two will be reprocessed.
 
 ### PDFId Plugins
 
