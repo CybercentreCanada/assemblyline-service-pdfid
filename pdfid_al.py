@@ -37,6 +37,7 @@ class PDFId(ServiceBase):
                                         looking for /RichMedia.  This can be use to embed Flash in a PDF
                                         """))
     # Commented heuristics are not reported anymore but are left in the code because they should not be reused
+    # TODO: Malform content, objstms, max_size, content carved, object extracted
     # AL_PDFID_006 = Heuristic("AL_PDFID_006", "PDF Date Modified", "document/pdf",
     #                          dedent("""\
     #                                 Date tag is ModDate. Will output the date value.
@@ -90,10 +91,10 @@ class PDFId(ServiceBase):
             '/URI'
         ],
         'HEURISTICS': [
-            'plugin_embeddedfile',
-            'plugin_nameobfuscation',
-            'plugin_suspicious_properties',
-            'plugin_triage'
+            "al_services/alsvc_pdfid/pdfid/plugin_embeddedfile",
+            'al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation',
+            'al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties',
+            'al_services/alsvc_pdfid/pdfid/plugin_triage'
         ],
         'MAX_PDF_SIZE': 3000000,
     }

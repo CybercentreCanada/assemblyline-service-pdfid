@@ -797,7 +797,7 @@ def LoadPlugins(plugins):
     errors = set()
     if len(plugins) == 0:
         return errors
-    scriptPath = os.path.dirname(os.path.realpath(__file__))
+    scriptPath = os.path.dirname(os.path.realpath('/opt/al/pkg/'))
     for plugin in sum(map(ProcessAt, plugins), []):
         try:
             if not plugin.lower().endswith('.py'):
