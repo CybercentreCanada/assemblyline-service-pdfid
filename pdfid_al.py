@@ -16,63 +16,63 @@ unicodedata = None
 
 # noinspection PyBroadException,PyCallingNonCallable
 class PDFId(ServiceBase):
-    AL_PDFID_001 = Heuristic("AL_PDFID_001", "PDF_AutoOpen", "document/pdf",
+    AL_PDFID_001 = Heuristic("AL_PDFId_001", "PDF_AutoOpen", "document/pdf",
                              dedent("""\
                                         Command detected to auto-open content 
                                         """))
-    AL_PDFID_002 = Heuristic("AL_PDFID_002", "After last %%EOF", "document/pdf",
+    AL_PDFID_002 = Heuristic("AL_PDFId_002", "After last %%EOF", "document/pdf",
                              dedent("""\
                                         There are byte(s) following the end of the PDF
                                         """))
-    AL_PDFID_003 = Heuristic("AL_PDFID_003", "JBIG2Decode", "document/pdf",
+    AL_PDFID_003 = Heuristic("AL_PDFId_003", "JBIG2Decode", "document/pdf",
                              dedent("""\
                                         looking for /JBIG2Decode. Using the JBIG2 compression
                                         """))
-    AL_PDFID_004 = Heuristic("AL_PDFID_004", "AcroForm", "document/pdf",
+    AL_PDFID_004 = Heuristic("AL_PDFId_004", "AcroForm", "document/pdf",
                              dedent("""\
                                         looking for /AcroForm.  This is an action launched by Forms
                                         """))
-    AL_PDFID_005 = Heuristic("AL_PDFID_005", "RichMedia", "document/pdf",
+    AL_PDFID_005 = Heuristic("AL_PDFId_005", "RichMedia", "document/pdf",
                              dedent("""\
                                         looking for /RichMedia.  This can be use to embed Flash in a PDF
                                         """))
-    AL_PDFID_006 = Heuristic("AL_PDFID_006", "Malformed Content", "document/pdf",
+    AL_PDFID_006 = Heuristic("AL_PDFId_006", "Malformed Content", "document/pdf",
                              dedent("""\
                                      Malformed object content over 100 bytes extracted by pdfparser
                                      """))
-    AL_PDFID_007 = Heuristic("AL_PDFID_007", "Objstms Detected", "document/pdf",
+    AL_PDFID_007 = Heuristic("AL_PDFId_007", "Objstms Detected", "document/pdf",
                              dedent("""\
                                     Embedded object streams in sample. Sometimes used to hide malicious content.
                                     """))
-    AL_PDFID_008 = Heuristic("AL_PDFID_008", "Carved Object Content", "document/pdf",
+    AL_PDFID_008 = Heuristic("AL_PDFId_008", "Carved Object Content", "document/pdf",
                              dedent("""\
                                     Suspicious object content carved from PDF. Displayed in service results.
                                     """))
-    AL_PDFID_009 = Heuristic("AL_PDFID_009", "Object Extracted", "document/pdf",
+    AL_PDFID_009 = Heuristic("AL_PDFId_009", "Object Extracted", "document/pdf",
                              dedent("""\
                                     Suspicious object in PDF sample extracted.
                                     """))
-    AL_PDFID_010 = Heuristic("AL_PDFID_010", "PDF too large", "document/pdf",
+    AL_PDFID_010 = Heuristic("AL_PDFId_010", "PDF too large", "document/pdf",
                              dedent("""\
                                     According to configuration parameters, sample too large for service to scan.
                                     """))
-    AL_PDFID_011 = Heuristic("AL_PDFID_011", "Encrypt", "document/pdf",
+    AL_PDFID_011 = Heuristic("AL_PDFId_011", "Encrypt", "document/pdf",
                              dedent("""\
                                             Found the /Encrypt string in the file. Will need to figure out why.
                                             """))
-    AL_PDFID_012 = Heuristic("AL_PDFID_012", "High Entropy", "document/pdf",
+    AL_PDFID_012 = Heuristic("AL_PDFId_012", "High Entropy", "document/pdf",
                              dedent("""\
                                         Outside stream entropy of > 5. Possible hidden content.
                                         """))
-    AL_PDFID_013 = Heuristic("AL_PDFID_013", "Obj/Endobj Mismatch", "document/pdf",
+    AL_PDFID_013 = Heuristic("AL_PDFId_013", "Obj/Endobj Mismatch", "document/pdf",
                              dedent("""\
                                         Sample "obj" keyword count does not equal "endobj" keyword count.
                                         """))
-    AL_PDFID_014 = Heuristic("AL_PDFID_014", "Stream/Endstream Mismatch", "document/pdf",
+    AL_PDFID_014 = Heuristic("AL_PDFId_014", "Stream/Endstream Mismatch", "document/pdf",
                              dedent("""\
                                         Sample "stream" keyword count does not equal "endstream" count.
                                         """))
-    AL_PDFID_015 = Heuristic("AL_PDFID_015", "Embedded file", "document/pdf",
+    AL_PDFID_015 = Heuristic("AL_PDFId_015", "Embedded file", "document/pdf",
                              dedent("""\
                                         Sample contains embedded files.
                                         """))
