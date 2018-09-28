@@ -1,10 +1,10 @@
-from textwrap import dedent
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.al.common.heuristics import Heuristic
 from assemblyline.al.common.result import Result, ResultSection, TEXT_FORMAT
 from assemblyline.al.common.result import SCORE, TAG_TYPE, TAG_WEIGHT
 from assemblyline.al.service.base import ServiceBase
-from copy import deepcopy
+
+from textwrap import dedent
 
 os = None
 pdid = None
@@ -36,28 +36,26 @@ class PDFId(ServiceBase):
                              dedent("""\
                                         looking for /RichMedia.  This can be use to embed Flash in a PDF
                                         """))
-    # Commented heuristics are not reported anymore but are left in the code because they should not be reused
-    # TODO: Malform content, objstms, max_size, content carved, object extracted
-    # AL_PDFID_006 = Heuristic("AL_PDFID_006", "PDF Date Modified", "document/pdf",
-    #                          dedent("""\
-    #                                 Date tag is ModDate. Will output the date value.
-    #                                 """))
-    # AL_PDFID_007 = Heuristic("AL_PDFID_007", "PDF Date Creation", "document/pdf",
-    #                          dedent("""\
-    #                                 Date tag is CreationDate. Will output the date value.
-    #                                 """))
-    # AL_PDFID_008 = Heuristic("AL_PDFID_008", "PDF Date Last Modified", "document/pdf",
-    #                          dedent("""\
-    #                                 Date tag is LastModified. Will output the date value.
-    #                                 """))
-    # AL_PDFID_009 = Heuristic("AL_PDFID_009", "PDF Date Source Modified", "document/pdf",
-    #                          dedent("""\
-    #                                 Date tag is SourceModified. Will output the date value.
-    #                                 """))
-    # AL_PDFID_010 = Heuristic("AL_PDFID_010", "PDF Date PDFX", "document/pdf",
-    #                          dedent("""\
-    #                                 Date tag is pdfx. Will output the date value.
-    #                                 """))
+    AL_PDFID_006 = Heuristic("AL_PDFID_006", "Malformed Content", "document/pdf",
+                             dedent("""\
+                                     Malformed object content over 100 bytes extracted by pdfparser
+                                     """))
+    AL_PDFID_007 = Heuristic("AL_PDFID_007", "Objstms Detected", "document/pdf",
+                             dedent("""\
+                                    Embedded object streams in sample. Sometimes used to hide malicious content.
+                                    """))
+    AL_PDFID_008 = Heuristic("AL_PDFID_008", "Carved Object Content", "document/pdf",
+                             dedent("""\
+                                    Suspicious object content carved from PDF. Displayed in service results.
+                                    """))
+    AL_PDFID_009 = Heuristic("AL_PDFID_009", "Object Extracted", "document/pdf",
+                             dedent("""\
+                                    Suspicious object in PDF sample extracted.
+                                    """))
+    AL_PDFID_010 = Heuristic("AL_PDFID_010", "PDF too large", "document/pdf",
+                             dedent("""\
+                                    According to configuration parameters, sample too large for service to scan.
+                                    """))
     AL_PDFID_011 = Heuristic("AL_PDFID_011", "Encrypt", "document/pdf",
                              dedent("""\
                                             Found the /Encrypt string in the file. Will need to figure out why.
@@ -91,7 +89,7 @@ class PDFId(ServiceBase):
             '/URI'
         ],
         'HEURISTICS': [
-            "al_services/alsvc_pdfid/pdfid/plugin_embeddedfile",
+            'al_services/alsvc_pdfid/pdfid/plugin_embeddedfile',
             'al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation',
             'al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties',
             'al_services/alsvc_pdfid/pdfid/plugin_triage'
@@ -104,7 +102,8 @@ class PDFId(ServiceBase):
 
     # noinspection PyUnresolvedReferences
     def import_service_deps(self):
-        global os, pdid, pdfparser, re
+        global deepcopy, os, pdid, pdfparser, re
+        from copy import deepcopy
         from pdfid import pdfid as pdid
         from pdfparser import pdf_parser as pdfparser
         import os
@@ -188,6 +187,7 @@ class PDFId(ServiceBase):
                 for flist in flags:
                     if flist[0] == "/ObjStm":
                         objstms = True
+                        hrs.add(PDFId.AL_PDFID_007)
                     if len(flist) == 3:
                         fres.add_line("{0}:Count: {1}, Hex-Encoded Count: {2}" .format(flist[0], flist[1], flist[2]))
                     else:
@@ -456,6 +456,7 @@ class PDFId(ServiceBase):
                     for jo in jbig_objs:
                         jbigres.add_line(jo)
             if len(carved_content) > 0:
+                hrs.add(PDFId.AL_PDFID_008)
                 for k, l in sorted(carved_content.iteritems()):
                     carved_obj_idx = 0
                     for d in l:
@@ -528,6 +529,8 @@ class PDFId(ServiceBase):
                         if files:
                             for f, l in files.iteritems():
                                 if f == 'malformed':
+                                    if len(l) > 0:
+                                        hrs.add(PDFId.AL_PDFID_006)
                                     for i in l:
                                         request.add_extracted(i,
                                                               "Extracted malformed content in PDF Parser Analysis.")
@@ -547,6 +550,8 @@ class PDFId(ServiceBase):
 
                 # Extract objects collected from above analysis
                 obj_to_extract = obj_extract_triage - embed_extracted
+                if len(obj_to_extract) > 0:
+                    hrs.add(PDFId.AL_PDFID_009)
                 for o in obj_to_extract:
                     # Final check to ensure object has a stream, if not drop it.
                     options = {
@@ -693,6 +698,20 @@ class PDFId(ServiceBase):
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
             heur = deepcopy(self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS']))
+            # Update will change configuration of heuristics to require path from /opt/al/pkg. Creating a temporary fix
+            # that default plugins won't break PDFId service
+            # TODO: Remove this code for AL version 4
+            to_rm = set()
+            for h in heur:
+                if h in ['plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties',
+                         'plugin_triage']:
+                    to_rm.add(h)
+            if len(to_rm) > 0:
+                self.log.warning("Service configuration out of date. Please add proper path to PDF plugins "
+                                 "(see service README)")
+            for h in to_rm:
+                heur.remove(h)
+                heur.append("al_services/alsvc_pdfid/pdfid/{}" .format(h))
 
             all_errors = set()
 
@@ -743,6 +762,7 @@ class PDFId(ServiceBase):
                 result.add_result(erres)
 
         else:
+            result.report_heuristic(PDFId.AL_PDFID_010)
             request.result.add_section(ResultSection(SCORE['NULL'], "PDF Analysis of the file was"
                                                                     " skipped because the file is "
                                                                     "too big (limit is 3 MB)."))
