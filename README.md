@@ -14,10 +14,19 @@ parameter:
 
 ADDITIONAL_KEYS=(Default: \["/URI"])
 
-To add new plugin scripts to PDFId, edit the following configuration parameter:
+To add new plugin scripts to PDFId, edit the following configuration parameter (must be under directory /opt/al/pkg/):
 
-HEURISTICS=(Default: \["plugin_embeddedfile", "plugin_nameobfuscation",
-"plugin_suspicious_properties", "plugin_triage])
+HEURISTICS=(Default: \[
+
+"al_services/alsvc_pdfid/pdfid/plugin_embeddedfile", 
+
+"al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation",
+
+"al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties", 
+
+"al_services/alsvc_pdfid/pdfid/plugin_triage"
+
+])
 
 To change the maximum sample size (in bytes) that the service will process, change this configuration parameter:
 'MAX_PDF_SIZE'=(Default 3000000) *Note:* deep scan mode will ignore this configuration parameter. 
