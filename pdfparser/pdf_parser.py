@@ -1250,6 +1250,8 @@ def PDFParserMain(filename, outdirectory, **kwargs):
     max_search_hits = 50
     search_hits = 0
 
+    obj_extracted = set()
+
     try:
         oPDFParser = cPDFParser(filename, verbose=verbose, extract=malform_content)
     except Exception as e:
@@ -1380,7 +1382,22 @@ def PDFParserMain(filename, outdirectory, **kwargs):
                             if result != None:
                                 results['parts'].append(result)
                     elif obj:
-                        if object.id == eval(obj):
+                        if isinstance(obj, set):
+                            str_objid = str(object.id)
+                            if dump and str_objid in obj:
+                                obj_dump = "{}{}" .format(dump, str_objid)
+                                res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, obj_dump, raw=raw,
+                                                             hsh=hsh, show_stream=show_stream)
+                                # Ensure the object contains a stream
+                                if "Contains stream" in res and "Object extracted." in res:
+                                    results['files']['embedded'].append(obj_dump)
+                                if len(err) > 0:
+                                    for e in err:
+                                        errors.add("Object extraction error: {}".format(e))
+                                obj_extracted.add(str_objid)
+                                if obj == obj_extracted:
+                                    break
+                        elif object.id == eval(obj):
                             res, err = PrintOutputObject(object, filt, nocanonicalizedoutput, dump, raw=raw,
                                                          hsh=hsh, show_stream=show_stream)
                             results['parts'].append(res)

@@ -102,10 +102,11 @@ class PDFId(ServiceBase):
 
     # noinspection PyUnresolvedReferences
     def import_service_deps(self):
-        global deepcopy, os, pdid, pdfparser, re
+        global deepcopy, hashlib, os, pdid, pdfparser, re
         from copy import deepcopy
         from pdfid import pdfid as pdid
         from pdfparser import pdf_parser as pdfparser
+        import hashlib
         import os
         import re
         try:
@@ -141,6 +142,7 @@ class PDFId(ServiceBase):
         objstms = False
         hrs = set()
         res = ResultSection(title_text=res_txt, score=SCORE.NULL)
+        carved_extracted_shas = set()
 
         if request.deep_scan:
             run_pdfparse = True
@@ -331,11 +333,12 @@ class PDFId(ServiceBase):
                                 references = p.split("\n", 3)[2].replace('Referencing:', '').strip().split(", ")
                             except Exception:
                                 pass
-                        # Special condition for JBIG2Decode
+                        # Only extract JBIG2Decode objects with deep scan, but always report on their presence
                         if keyword == "JBIG2Decode" and "/Filter" in p and "Contains stream" in p:
                             try:
                                 objnum = p.split("\n", 1)[0].split(" ")[1]
-                                obj_extract_triage.add(objnum)
+                                if request.deep_scan:
+                                    obj_extract_triage.add(objnum)
                                 jbig_objs.add(objnum)
                                 continue
                             except Exception as e:
@@ -450,15 +453,12 @@ class PDFId(ServiceBase):
                 carres = None
 
             if len(jbig_objs) > 0:
-                    jbigres = ResultSection(title_text="The following Object IDs were extracted unfiltered as "
-                                                       "JBIG2Decode keyword detected:",
+                    jbigres = ResultSection(title_text="The following Object IDs are JBIG2DECODE streams:",
                                             score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
-                    for jo in jbig_objs:
-                        jbigres.add_line(jo)
+                    jbigres.add_line(', '.join(map(str, jbig_objs)))
             if len(carved_content) > 0:
                 hrs.add(PDFId.AL_PDFID_008)
                 for k, l in sorted(carved_content.iteritems()):
-                    carved_obj_idx = 0
                     for d in l:
                         for keyw, con in d.iteritems():
                             subres = ResultSection(title_text="Content for Keyword hit from Object {0}:  '{1}':"
@@ -483,13 +483,16 @@ class PDFId(ServiceBase):
                                                 for v in ulis:
                                                     subres.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
                             else:
-                                subres.add_line("Content over 500 bytes, see extracted files".format(keyw))
-                                carvf = os.path.join(self.working_directory, "carved_content_obj_{0}_{1}_{2}"
-                                                     .format(k, keyw, carved_obj_idx))
-                                with open(carvf, 'wb') as f:
-                                    f.write(con)
-                                request.add_extracted(carvf, "Extracted content from object {}" .format(k))
-                                carved_obj_idx += 1
+                                crv_sha = hashlib.sha256(con).hexdigest()
+                                subres.add_line("Content over 500 bytes, see extracted file with sha256 {}"
+                                                .format(crv_sha))
+                                if crv_sha not in carved_extracted_shas:
+                                    crvf = os.path.join(self.working_directory, "carved_content_obj_{}_{}"
+                                                         .format(k, crv_sha[0:15]))
+                                    with open(crvf, 'wb') as f:
+                                        f.write(con)
+                                    request.add_extracted(crvf, "Extracted content from object {}" .format(k))
+                                    carved_extracted_shas.add(crv_sha)
 
             # ELEMENTS
             # Do not show for objstms
@@ -549,13 +552,13 @@ class PDFId(ServiceBase):
                                     embed_extracted.add(getobj)
 
                 # Extract objects collected from above analysis
-                obj_to_extract = obj_extract_triage - embed_extracted
+                obj_to_extract = obj_extract_triage - embed_extracted - jbig_objs
+
                 if len(obj_to_extract) > 0:
-                    hrs.add(PDFId.AL_PDFID_009)
-                for o in obj_to_extract:
-                    # Final check to ensure object has a stream, if not drop it.
                     options = {
-                        "object": o
+                        "filter": True,
+                        "object": obj_to_extract,
+                        "dump": "extracted_obj_{}",
                     }
                     try:
                         pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
@@ -563,36 +566,39 @@ class PDFId(ServiceBase):
                         pdfparser_result = None
                         self.log.debug(e)
                     if pdfparser_result:
-                        if not pdfparser_result['parts'][0].split("\n", 4)[3] == "Contains stream":
-                            continue
-                    else:
-                        continue
-
-                    if o in jbig_objs:
-                        options = {
-                            "object": o,
-                            "dump": "extracted_obj_{}".format(o),
-                        }
-                    else:
-                        options = {
-                            "filter": True,
-                            "object": o,
-                            "dump": "extracted_obj_{}".format(o),
-                        }
-                    try:
-                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
-                    except Exception as e:
-                        pdfparser_result = None
-                        self.log.debug(e)
-
-                    if pdfparser_result:
                         files = pdfparser_result.get("files", None)
                         if files:
                             for f, l in files.iteritems():
                                 if f == 'embedded':
                                     for i in l:
                                         request.add_extracted(i, "Object {} extracted in PDF Parser Analysis."
-                                                              .format(o))
+                                                              .format(i.replace("extracted_obj_", "")))
+                                        hrs.add(PDFId.AL_PDFID_009)
+
+                        for e in errors:
+                            all_errors.add(e)
+
+                # Extract jbig2decode objects in deep scan mode
+                if request.deep_scan and len(jbig_objs) > 0:
+                    options = {
+                        "object": jbig_objs,
+                        "dump": "extracted_obj_",
+                    }
+                    try:
+                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    except Exception as e:
+                        pdfparser_result = None
+                        self.log.debug(e)
+                    if pdfparser_result:
+                        files = pdfparser_result.get("files", None)
+                        if files:
+                            for f, l in files.iteritems():
+                                if f == 'embedded':
+                                    for i in l:
+                                        request.add_extracted(i, "JBIG2DECODE object {} extracted in PDF "
+                                                                 "Parser Analysis."
+                                                              .format(i.replace("extracted_obj_", "")))
+                                        hrs.add(PDFId.AL_PDFID_009)
 
                         for e in errors:
                             all_errors.add(e)
