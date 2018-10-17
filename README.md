@@ -93,7 +93,8 @@ suspicious elements are present in the sample.
     - StartXref
 
 - Extracts Suspicious Elements:
-    - Entire Objects (as extracted file) when flagged by PDFId plugins.
+    - Entire Objects (as extracted file) when flagged by PDFId plugins
+    (JBIG2Decode objects will only be extracted in deep scan mode).
     - Specific Object content (in AL result) and will run FrankenStrings
     Patterns against content to search for IOCs (determined by PDFId
     plugins).
