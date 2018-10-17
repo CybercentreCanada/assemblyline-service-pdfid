@@ -558,7 +558,7 @@ class PDFId(ServiceBase):
                     options = {
                         "filter": True,
                         "object": obj_to_extract,
-                        "dump": "extracted_obj_{}",
+                        "dump": "extracted_obj_",
                     }
                     try:
                         pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
