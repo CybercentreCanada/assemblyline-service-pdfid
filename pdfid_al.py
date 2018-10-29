@@ -611,9 +611,9 @@ class PDFId(ServiceBase):
     def write_objstm(self, path, working_dir, objstm, objstm_path):
 
         stream_present = False
-        header = "%PDF-1.5\x0A%Fake header created by AL PDFID service.\x0A"
+        header = "%PDF-1.6\x0A%Fake header created by AL PDFID service.\x0A"
         trailer = "%%EOF\x0A"
-        obj_footer = "endobj\x0A"
+        obj_footer = "\rendobj\r"
         objstm_file = None
 
         options = {
@@ -644,10 +644,23 @@ class PDFId(ServiceBase):
                                 if not re.match("<<.*", stream):
                                     extra_content = re.match(r'[^<]*', stream).group(0)
                                     stream = stream.replace(extra_content, "%{}\x0A" .format(extra_content))
-                                # Find all labels and surround them with obj headers
                                 obj_idx = 1
-                                for m in re.findall(r"(<<[^\n]*>>\x0A|<<[^\n]*>>$)", stream):
-                                    stream = stream.replace(m, "{} 0 obj\x0A" .format(obj_idx) + m + obj_footer)
+                                # Find all labels and surround them with obj headers
+                                for lab in re.findall(r"(<<[^\n]*>>(?:\x0A|\x0D)|<<[^\n]*>>$)", stream):
+                                    stream = stream.replace(lab, "{} 0 obj\r" .format(obj_idx) +
+                                                            "".join(lab.rsplit('\n', 1)) + obj_footer)
+                                    obj_idx += 1
+                                # Find all streams and surround them wirh stream headers
+                                for ste in re.findall(r">>(?:(?!stream)(?!(?:\r|\n)endobj)[^<])+", stream):
+                                    # Might be multi-layer stream:
+                                    if ste.endswith('>>'):
+                                        continue
+                                    stream = stream.replace(ste, ">>stream\n{}\nendstream\rendobj\r"
+                                                            .format(ste.replace('>>', "", 1)))
+                                # Find all labels with attached stream, and surround them with obj headers
+                                for lab_ste in re.findall('(?:(?:(?!obj)...)|(?:endobj))((?:\r|\n)<<(?:(?!endobj).)+)',
+                                                          stream, re.DOTALL):
+                                    stream = stream.replace(lab_ste, "\r{} 0 obj\r" .format(obj_idx) + lab_ste[2:])
                                     obj_idx += 1
                                 f.seek(0, 0)
                                 f.write(header + stream + trailer)
@@ -740,15 +753,15 @@ class PDFId(ServiceBase):
                     res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
                     # It is going to look suspicious as the service created the PDF
                     try:
-                        heur.remove("plugin_suspicious_properties")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties")
                     except Exception:
                         pass
                     try:
-                        heur.remove("plugin_embeddedfile")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_embeddedfile")
                     except Exception:
                         pass
                     try:
-                        heur.remove("plugin_nameobfuscation")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation")
                     except Exception:
                         pass
 
