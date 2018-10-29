@@ -753,15 +753,15 @@ class PDFId(ServiceBase):
                     res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
                     # It is going to look suspicious as the service created the PDF
                     try:
-                        heur.remove("plugin_suspicious_properties")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties")
                     except Exception:
                         pass
                     try:
-                        heur.remove("plugin_embeddedfile")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_embeddedfile")
                     except Exception:
                         pass
                     try:
-                        heur.remove("plugin_nameobfuscation")
+                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation")
                     except Exception:
                         pass
 
