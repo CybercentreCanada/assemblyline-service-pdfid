@@ -1216,11 +1216,15 @@ def HexAsciiDumpLine(data):
     return HexAsciiDump(data[0:16])[10:-1]
 
 def PDFParserMain(filename, outdirectory, **kwargs):
-    """
-    Modified by CSE to fit ASSEMBLYLINE Service
-    """
-    """
-    pdf-parser, use it to parse a PDF document
+    """PDF Parser Main Module. Modified by CSE to fit ASSEMBLYLINE Service.
+
+    Args:
+        filename: Original PDF sample path.
+        outdirectory: AL working directory.
+        kwargs: Dictionary of PDF Parser module options.
+
+    Returns:
+        PDF Parser result (dictionary object) and error list.
     """
 
     # Options
