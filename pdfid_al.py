@@ -118,7 +118,17 @@ class PDFId(ServiceBase):
 
     @staticmethod
     def get_pdfid(path, additional_keywords, options, deep):
+        """Run PDFId code on sample.
 
+        Args:
+            path: Original PDF sample path.
+            additional_keywords: List of additional keywords to be searched (provided in service configuration).
+            options: List of PDFId module plugins.
+            deep: Boolean value of AL submission deep scan value.
+
+        Returns:
+            PDFId result and error list.
+        """
         try:
             pdfid_result, errors = pdid.PDFiDMain(path, additional_keywords, options, deep)
         except Exception as e:
@@ -128,6 +138,16 @@ class PDFId(ServiceBase):
 
     @staticmethod
     def get_pdfparser(path, working_dir, options):
+        """Run PDF Parser code on sample.
+
+        Args:
+            path: Original PDF sample path.
+            working_dir: AL working directory.
+            options: Dictionary of PDFId module options (see pdf_parser.py)
+
+        Returns:
+            PDF Parser result and error list.
+        """
         try:
             pdfparser_statresult, errors = pdfparser.PDFParserMain(path, working_dir, **options)
         except Exception as e:
@@ -136,6 +156,21 @@ class PDFId(ServiceBase):
         return pdfparser_statresult, errors
 
     def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
+        """Extract metadata, keyword objects and content of interest from a PDF sample using PDFId, PDFId plugins,
+        and PDF Parser.
+
+        Args:
+            request: AL request object.
+            res_txt: Header string for AL result section title.
+            path: Original PDF sample path.
+            working_dir: AL working directory.
+            heur: List of plugins to run on PDFId results (provided in service configuration).
+            additional_keywords: List of additional keywords to be searched (provided in service configuration).
+            get_malform: Extract malformed objects from PDF.
+
+        Returns:
+            AL result object, AL heuristics list to add to result, list of object streams (objstms), and an errors list.
+        """
         triage_keywords = set()
         all_errors = set()
         embed_present = False
@@ -149,11 +184,12 @@ class PDFId(ServiceBase):
         else:
             run_pdfparse = False
 
+        # Run PDFId
         try:
             pdfid_result, errors = self.get_pdfid(path, additional_keywords, heur, request.deep_scan)
         except Exception as e:
             raise NonRecoverableError(e)
-
+        # Parse PDFId results
         pdfidres = ResultSection(title_text="PDFID Results", score=SCORE.NULL, parent=res)
         if len(pdfid_result) == 0:
             pdfidres.add_line("No results generated for file. Please see errors.")
@@ -198,7 +234,7 @@ class PDFId(ServiceBase):
                         triage_keywords.add(flist[0].replace("/", "", 1))
             plugin = pdfid_result.get("Plugin", None)
             if plugin:
-                # If any plugin results, run pdfparse
+                # If any plugin results, run PDF Parser
                 run_pdfparse = True
                 plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
                 for pllist in plugin:
@@ -609,7 +645,17 @@ class PDFId(ServiceBase):
         return res, hrs, objstms, all_errors
 
     def write_objstm(self, path, working_dir, objstm, objstm_path):
+        """Write object stream (objstm) to file as a mock PDF.
 
+        Args:
+            path: Original PDF sample path.
+            working_dir: AL working directory.
+            objstm: Content of objstm.
+            objstm_path: File path to write mock PDF.
+
+        Returns:
+            File path of objstm file if extraction successful, or None.
+        """
         stream_present = False
         header = "%PDF-1.6\x0A%Fake header created by AL PDFID service.\x0A"
         trailer = "%%EOF\x0A"
@@ -668,7 +714,16 @@ class PDFId(ServiceBase):
         return objstm_file
 
     def analyze_objstm(self, path, working_dir, deep_scan):
+        """Extract object streams (objstm) from PDF sample and write to file as a mock PDF.
 
+        Args:
+            path: Original PDF sample path.
+            working_dir: AL working directory.
+            deep_scan: Boolean value of AL submission deep scan value.
+
+        Returns:
+            List of extracted objstm file paths.
+        """
         objstm_extracted = set()
 
         obj_files = set()
@@ -707,6 +762,7 @@ class PDFId(ServiceBase):
         return obj_files
 
     def execute(self, request):
+        """Main Module. See README for details."""
         max_size = self.cfg.get('MAX_PDF_SIZE', 3000000)
         result = Result()
         request.result = result

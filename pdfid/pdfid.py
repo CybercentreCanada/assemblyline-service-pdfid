@@ -814,8 +814,16 @@ def LoadPlugins(plugins):
 
 
 def PDFiDMain(filename, additional_keywords, heuristics, deep_scan=False):
-    """
-    Modified by CSE to fit ASSEMBLYLINE Service
+    """PDFiD Main Module. Modified by CSE to fit ASSEMBLYLINE Service.
+
+    Args:
+        filename: Original PDF sample path.
+        additional_keywords: Additional keyword content for PDFId module to search in sample.
+        heuristics: List of PDFId plugins.
+        deep_scan: Not currently used.
+
+    Returns:
+        PDF Parser result (dictionary object) and error list.
     """
     global plugins
     plugins = []
@@ -825,6 +833,7 @@ def PDFiDMain(filename, additional_keywords, heuristics, deep_scan=False):
     #if deep_scan:
         #all_names = True
 
+    # Options
     options = {
         'all': all_names,
         'force': True,
