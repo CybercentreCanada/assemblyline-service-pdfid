@@ -123,7 +123,7 @@ class PDFId(ServiceBase):
         Args:
             path: Original PDF sample path.
             additional_keywords: List of additional keywords to be searched (provided in service configuration).
-            options: List of PDFId module plugins.
+            options: List of PDFId module plugins (provided in service configuration)..
             deep: Boolean value of AL submission deep scan value.
 
         Returns:

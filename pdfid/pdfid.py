@@ -823,7 +823,7 @@ def PDFiDMain(filename, additional_keywords, heuristics, deep_scan=False):
         deep_scan: Not currently used.
 
     Returns:
-        PDF Parser result (dictionary object) and error list.
+        PDFId result (dictionary object) and error list.
     """
     global plugins
     plugins = []
