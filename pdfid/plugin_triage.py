@@ -26,7 +26,8 @@ class cPDFiDTriage(cPluginParent):
             self.hits.add('/JS')
         if '/JavaScript' in self.oPDFiD.keywords and self.oPDFiD.keywords['/JavaScript'].count > 0:
             self.hits.add('/JavaScript')
-        if self.oPDFiD.keywords['/JavaScript'].count > 0 or self.oPDFiD.keywords['/JS'].count > 0:
+        if self.oPDFiD.keywords['/JavaScript'].count > 0 \
+                or self.oPDFiD.keywords['/JS'].count > 0:
             score += 100
         for keyword in ('/JBIG2Decode', '/Colors > 2^24'):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
@@ -35,12 +36,19 @@ class cPDFiDTriage(cPluginParent):
         # Auto open/Launch - separated so we do not double-score
         if '/AA' in self.oPDFiD.keywords and self.oPDFiD.keywords['/AA'].count > 0:
             self.hits.add('/AA')
+        if '/GoToE' in self.oPDFiD.keywords and self.oPDFiD.keywords['/GoToE'].count > 0:
+            self.hits.add('/GoToE')
+        if '/GoToR' in self.oPDFiD.keywords and self.oPDFiD.keywords['/GoToR'].count > 0:
+            self.hits.add('/GoToR')
         if '/OpenAction' in self.oPDFiD.keywords and self.oPDFiD.keywords['/OpenAction'].count > 0:
             self.hits.add('/OpenAction')
         if '/Launch' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Launch'].count > 0:
             self.hits.add('/Launch')
-        if self.oPDFiD.keywords['/AA'].count > 0 or self.oPDFiD.keywords['/OpenAction'].count > 0 \
-                or self.oPDFiD.keywords['/Launch'].count > 0:
+        if self.oPDFiD.keywords['/AA'].count > 0 \
+                or self.oPDFiD.keywords['/GoToE'].count > 0 \
+                or self.oPDFiD.keywords['/GoToR'].count > 0 \
+                or self.oPDFiD.keywords['/Launch'].count > 0 \
+                or self.oPDFiD.keywords['/OpenAction'].count > 0:
             score += 50
         # Forms, Flash, XFA
         for keyword in ('/AcroForm', '/RichMedia', '/XFA'):
@@ -88,7 +96,9 @@ class cPDFiDTriage(cPluginParent):
             '/XFA': '"/XFA": indicates XML Forms Architecture. These can be used to hide malicious code.\n',
             '/Colors > 2^24': '"/Colors > 2^24": hits when the number of colors is expressed with more than 3 bytes.\n',
             '/ObjStm': '"/ObjStm": sample contains object stream(s). Can be used to obfuscate objects.\n',
-            '/URI': '"/URI": sample contains URLs.\n'
+            '/URI': '"/URI": sample contains URLs.\n',
+            '/GoToE': '"/GoToE": Go to remote.\n',
+            '/GoToR': '"/GoToR": Go to embedded.\n'
         }
 
         message = "The following keywords have been flagged in this sample:\n"
