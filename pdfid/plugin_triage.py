@@ -34,42 +34,17 @@ class cPDFiDTriage(cPluginParent):
                 self.hits.add(keyword)
                 score += 50
         # Auto open/Launch - separated so we do not double-score
-        if '/AA' in self.oPDFiD.keywords and self.oPDFiD.keywords['/AA'].count > 0:
-            self.hits.add('/AA')
-        if '/GoToE' in self.oPDFiD.keywords and self.oPDFiD.keywords['/GoToE'].count > 0:
-            self.hits.add('/GoToE')
-        if '/GoToR' in self.oPDFiD.keywords and self.oPDFiD.keywords['/GoToR'].count > 0:
-            self.hits.add('/GoToR')
-        if '/OpenAction' in self.oPDFiD.keywords and self.oPDFiD.keywords['/OpenAction'].count > 0:
-            self.hits.add('/OpenAction')
-        if '/Launch' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Launch'].count > 0:
-            self.hits.add('/Launch')
-        if self.oPDFiD.keywords['/AA'].count > 0 \
-                or self.oPDFiD.keywords['/GoToE'].count > 0 \
-                or self.oPDFiD.keywords['/GoToR'].count > 0 \
-                or self.oPDFiD.keywords['/Launch'].count > 0 \
-                or self.oPDFiD.keywords['/OpenAction'].count > 0:
-            score += 50
-        # Forms, Flash, XFA
-        for keyword in ('/AcroForm', '/RichMedia', '/XFA'):
+        for keyword in ['/AA', '/GoToE', '/GoToR', '/OpenAction', '/Launch']:
+            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
+                self.hits.add(keyword)
+                score += 50
+        # Forms, Flash, XFA and Encrypted content
+        for keyword in ['/AcroForm', '/Encrypt', '/RichMedia', '/XFA']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 25
-        # Encrypted content
-        for keyword in ['/Encrypt']:
-            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
-                self.hits.add(keyword)
-                score += 25
-        # Other content to flag for PDFParser to extract, but not to score
-        for keyword in ['/Annot']:
-            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
-                self.hits.add(keyword)
-                score += 1
-        for keyword in ('/ObjStm', ):
-            if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
-                self.hits.add(keyword)
-                score += 1
-        for keyword in ['/URI']:
+        # Other content to flag for PDFParser to extract, but score low
+        for keyword in ['/Annot', '/ObjStm', '/URI']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
                 score += 1
