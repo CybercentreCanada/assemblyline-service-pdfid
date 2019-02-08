@@ -777,6 +777,12 @@ class PDFId(ServiceBase):
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
             heur = deepcopy(self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS']))
+            # Update will break triage plugin as it now requires GoToE and GoToR to be default.
+            # TODO: Remove this code for AL version 4
+            if '/GoToE' not in additional_keywords and 'al_services/alsvc_pdfid/pdfid/plugin_triage' in heur:
+                additional_keywords.update(['GoToE', 'GoToR'])
+                self.log.warning("ADDITIONAL_KEYS list in service configuration should be updated with 'GoToE' and "
+                                 "'GoToR' items (see service README).")
             # Update will change configuration of heuristics to require path from /opt/al/pkg. Creating a temporary fix
             # that default plugins won't break PDFId service
             # TODO: Remove this code for AL version 4
