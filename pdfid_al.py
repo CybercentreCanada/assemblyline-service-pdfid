@@ -778,7 +778,6 @@ class PDFId(ServiceBase):
             additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
             heur = deepcopy(self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS']))
             # Update will break triage plugin as it now requires GoToE and GoToR to be default.
-            # that default plugins won't break PDFId service
             # TODO: Remove this code for AL version 4
             if '/GoToE' not in additional_keywords and 'al_services/alsvc_pdfid/pdfid/plugin_triage' in heur:
                 additional_keywords.update(['GoToE', 'GoToR'])
