@@ -239,8 +239,8 @@ class PDFId(ServiceBase):
             # If any plugin results, or flagged keywords found, run PDF Parser
             if plugin or len(triage_keywords) > 0:
                 run_pdfparse = True
-                plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
                 if plugin:
+                    plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
                     for pllist in plugin:
                         modres = ResultSection(title_text=pllist[0], score=int(pllist[1]), parent=plres,
                                                body_format=TEXT_FORMAT.MEMORY_DUMP)
