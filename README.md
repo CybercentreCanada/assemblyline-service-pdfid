@@ -12,7 +12,15 @@ preinstalled and working after a default installation
 To add keywords to PDFId's search list, edit the following configuration
 parameter:
 
-ADDITIONAL_KEYS=(Default: \["/URI"])
+ADDITIONAL_KEYS=(Default: \[
+
+"/URI",
+
+"/GoToE",
+
+"/GoToR"
+
+])
 
 To add new plugin scripts to PDFId, edit the following configuration parameter (must be under directory /opt/al/pkg/):
 
