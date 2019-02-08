@@ -86,7 +86,10 @@ class PDFId(ServiceBase):
     SERVICE_RAM_MB = 256
     SERVICE_DEFAULT_CONFIG = {
         'ADDITIONAL_KEYS': [
-            '/URI'
+            '/URI',
+            '/GoToE',
+            '/GoToR',
+            '/XObject'
         ],
         'HEURISTICS': [
             'al_services/alsvc_pdfid/pdfid/plugin_embeddedfile',
@@ -233,33 +236,34 @@ class PDFId(ServiceBase):
                     if flist[0] in additional_keywords:
                         triage_keywords.add(flist[0].replace("/", "", 1))
             plugin = pdfid_result.get("Plugin", None)
-            if plugin:
-                # If any plugin results, run PDF Parser
+            # If any plugin results, or flagged keywords found, run PDF Parser
+            if plugin or len(triage_keywords) > 0:
                 run_pdfparse = True
                 plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
-                for pllist in plugin:
-                    modres = ResultSection(title_text=pllist[0], score=int(pllist[1]), parent=plres,
-                                           body_format=TEXT_FORMAT.MEMORY_DUMP)
-                    modres.add_line(pllist[2])
-                    # Check if embedded files are present
-                    if pllist[0] == 'EmbeddedFile':
-                        hrs.add(PDFId.AL_PDFID_015)
-                        if int(pllist[1]) > 0:
-                            embed_present = True
-                    # Grab suspicious properties for pdfparser
-                    if pllist[0] == 'Triage':
-                        triage_keywords.update([re.sub(r'(\"|:|/)', '', x) for x in
-                                           re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE)])
-                    # Add heuristics for suspicious properties
-                    if pllist[0] == 'Suspicious Properties':
-                        if "eof2" in pllist[2] or "eof5" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_002)
-                        if "entropy" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_012)
-                        if "obj/endobj" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_013)
-                        if "stream/endstream" in pllist[2]:
-                            hrs.add(PDFId.AL_PDFID_014)
+                if plugin:
+                    for pllist in plugin:
+                        modres = ResultSection(title_text=pllist[0], score=int(pllist[1]), parent=plres,
+                                               body_format=TEXT_FORMAT.MEMORY_DUMP)
+                        modres.add_line(pllist[2])
+                        # Check if embedded files are present
+                        if pllist[0] == 'EmbeddedFile':
+                            hrs.add(PDFId.AL_PDFID_015)
+                            if int(pllist[1]) > 0:
+                                embed_present = True
+                        # Grab suspicious properties for pdfparser
+                        if pllist[0] == 'Triage':
+                            triage_keywords.update([re.sub(r'(\"|:|/)', '', x) for x in
+                                               re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE)])
+                        # Add heuristics for suspicious properties
+                        if pllist[0] == 'Suspicious Properties':
+                            if "eof2" in pllist[2] or "eof5" in pllist[2]:
+                                hrs.add(PDFId.AL_PDFID_002)
+                            if "entropy" in pllist[2]:
+                                hrs.add(PDFId.AL_PDFID_012)
+                            if "obj/endobj" in pllist[2]:
+                                hrs.add(PDFId.AL_PDFID_013)
+                            if "stream/endstream" in pllist[2]:
+                                hrs.add(PDFId.AL_PDFID_014)
 
         for e in errors:
             all_errors.add(e)
