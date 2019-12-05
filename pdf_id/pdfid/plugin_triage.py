@@ -37,12 +37,10 @@ class cPDFiDTriage(cPluginParent):
         for keyword in ['/AcroForm', '/Encrypt', '/RichMedia', '/XFA']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-                score += 25
         # Other content to flag for PDFParser to extract, but score low
         for keyword in ['/Annot', '/ObjStm', '/URI']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-                score += 1
         return score, self.hits
 
     def Instructions(self, score, hits):

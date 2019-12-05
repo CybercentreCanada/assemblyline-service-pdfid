@@ -15,8 +15,8 @@ from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FO
 
 
 class PDFId(ServiceBase):
-    def __init__(self, cfg=None):
-        super(PDFId, self).__init__(cfg)
+    def __init__(self, config=None):
+        super(PDFId, self).__init__(config)
 
     @staticmethod
     def get_pdfid(path, additional_keywords, options, deep):
@@ -51,7 +51,7 @@ class PDFId(ServiceBase):
             PDF Parser result and error list.
         """
         try:
-            pdf_parser_statresult, errors = pdf_parser.pdf_parserMain(path, working_dir, **options)
+            pdf_parser_statresult, errors = pdf_parser.PDFParserMain(path, working_dir, **options)
         except Exception as e:
             raise Exception("pdf_parser failed to run on sample. Error: {}" .format(e))
 
@@ -430,21 +430,24 @@ class PDFId(ServiceBase):
                 carres.set_heuristic(8)
                 for k, l in sorted(carved_content.items()):
                     for d in l:
-                        for keyw, con in d.iteritems():
+                        for keyw, con in d.items():
                             subres = ResultSection(title_text="Content for Keyword hit from Object {0}:  '{1}':"
                                                    .format(k, keyw),
                                                    body_format=BODY_FORMAT.MEMORY_DUMP, parent=carres)
+
+                            con_bytes = con.encode()
                             if len(con) < 500:
                                 subres.add_line(con)
+
                                 # Check for IOC content
                                 try:
                                     patterns = PatternMatch()
                                 except Exception:
                                     patterns = None
                                 if patterns:
-                                    st_value = patterns.ioc_match(con, bogon_ip=True)
+                                    st_value = patterns.ioc_match(con_bytes, bogon_ip=True)
                                     if len(st_value) > 0:
-                                        for ty, val in st_value.iteritems():
+                                        for ty, val in st_value.items():
                                             if val == "":
                                                 asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
                                                 subres.add_tag(ty, asc_asc)
@@ -453,15 +456,16 @@ class PDFId(ServiceBase):
                                                 for v in ulis:
                                                     subres.add_tag(ty, v)
                             else:
-                                crv_sha = hashlib.sha256(con).hexdigest()
+                                crv_sha = hashlib.sha256(con_bytes).hexdigest()
                                 subres.add_line("Content over 500 bytes, see extracted file with sha256 {}"
                                                 .format(crv_sha))
                                 if crv_sha not in carved_extracted_shas:
-                                    crvf = os.path.join(self.working_directory, "carved_content_obj_{}_{}"
-                                                         .format(k, crv_sha[0:15]))
+                                    crvf = os.path.join(self.working_directory,
+                                                        "carved_content_obj_{}_{}".format(k, crv_sha[0:15]))
                                     with open(crvf, 'wb') as f:
-                                        f.write(con)
-                                    request.add_extracted(crvf, "Extracted content from object {}" .format(k))
+                                        f.write(con_bytes)
+                                    request.add_extracted(crvf, os.path.basename(crvf),
+                                                          "Extracted content from object {}" .format(k))
                                     carved_extracted_shas.add(crv_sha)
 
             # ELEMENTS
@@ -500,12 +504,12 @@ class PDFId(ServiceBase):
                         # PDF Parser will write any malformed content over 100 bytes to a file
                         files = pdf_parser_result.get("files", None)
                         if files:
-                            for f, l in files.iteritems():
+                            for f, l in files.items():
                                 if f == 'malformed':
                                     if len(l) > 0:
                                         pdf_parserres.set_heuristic(6)
                                     for i in l:
-                                        request.add_extracted(i,
+                                        request.add_extracted(i, os.path.basename(i),
                                                               "Extracted malformed content in PDF Parser Analysis.")
 
                         parts = pdf_parser_result.get("parts", None)
@@ -539,10 +543,11 @@ class PDFId(ServiceBase):
                     if pdf_parser_result:
                         files = pdf_parser_result.get("files", None)
                         if files:
-                            for f, l in files.iteritems():
+                            for f, l in files.items():
                                 if f == 'embedded':
                                     for i in l:
-                                        request.add_extracted(i, "Object {} extracted in PDF Parser Analysis."
+                                        request.add_extracted(i, os.path.basename(i),
+                                                              "Object {} extracted in PDF Parser Analysis."
                                                               .format(i.replace("extracted_obj_", "")))
                                         e_success = False
 
@@ -569,12 +574,12 @@ class PDFId(ServiceBase):
                     if pdf_parser_result:
                         files = pdf_parser_result.get("files", None)
                         if files:
-                            for f, l in files.iteritems():
+                            for f, l in files.items():
                                 if f == 'embedded':
                                     for i in l:
                                         je_success = True
-                                        request.add_extracted(i, "JBIG2DECODE object {} extracted in PDF "
-                                                                 "Parser Analysis."
+                                        request.add_extracted(i, os.path.basename(i),
+                                                              "JBIG2DECODE object {} extracted in PDF Parser Analysis."
                                                               .format(i.replace("extracted_obj_", "")))
 
                         for e in errors:
@@ -627,7 +632,7 @@ class PDFId(ServiceBase):
             if stream_present:
                 files = pdf_parser_subresult.get("files", None)
                 if files:
-                    for fi, l in files.iteritems():
+                    for fi, l in files.items():
                         if fi == 'embedded' and len(l) > 0:
                             objstm_file = l[0]
                             with open(objstm_file, 'r+') as f:
@@ -712,39 +717,18 @@ class PDFId(ServiceBase):
         max_size = self.config.get('MAX_PDF_SIZE', 3000000)
         result = Result()
         request.result = result
-        if (request.task.size or 0) < max_size or request.deep_scan:
+        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
             path = request.file_path
             working_dir = self.working_directory
 
             # CALL PDFID and identify all suspicious keyword streams
             additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
             heur = deepcopy(self.config.get('HEURISTICS', []))
-            # Update will break triage plugin as it now requires GoToE and GoToR to be default.
-            # TODO: Remove this code for AL version 4
-            if '/GoToE' not in additional_keywords and 'al_services/alsvc_pdfid/pdfid/plugin_triage' in heur:
-                additional_keywords.extend(['GoToE', 'GoToR'])
-                self.log.warning("ADDITIONAL_KEYS list in service configuration should be updated with 'GoToE' and "
-                                 "'GoToR' items (see service README).")
-            # Update will change configuration of heuristics to require path from /opt/al/pkg. Creating a temporary fix
-            # that default plugins won't break PDFId service
-            # TODO: Remove this code for AL version 4
-            to_rm = set()
-            for h in heur:
-                if h in ['plugin_embeddedfile', 'plugin_nameobfuscation', 'plugin_suspicious_properties',
-                         'plugin_triage']:
-                    to_rm.add(h)
-            if len(to_rm) > 0:
-                self.log.warning("Service configuration out of date. Please add proper path to PDF plugins "
-                                 "(see service README)")
-            for h in to_rm:
-                heur.remove(h)
-                heur.append("al_services/alsvc_pdfid/pdfid/{}" .format(h))
-
             all_errors = set()
 
             res_txt = "Main Document Results"
-            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur,
-                                                                    additional_keywords)
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir,
+                                                             heur, additional_keywords)
             result.add_section(res)
 
             for e in errors:

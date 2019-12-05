@@ -19,7 +19,7 @@ licence_count: 0
 
 config:
   ADDITIONAL_KEYS: ['/URI', '/GoToE', '/GoToR', '/XObject']
-  HEURISTICS: ['/opt/al_service/pdf_id/pdfid/plugin_embeddedfile', '/opt/al_service/pdf_id/pdfid/plugin_nameobfuscation', '/opt/al_service/pdf_id/pdfid/plugin_suspicious_properties', '/opt/al_service/pdf_id/pdfid/plugin_triage']
+  HEURISTICS: ['pdf_id/pdfid/plugin_embeddedfile', 'pdf_id/pdfid/plugin_nameobfuscation', 'pdf_id/pdfid/plugin_suspicious_properties', 'pdf_id/pdfid/plugin_triage']
   MAX_PDF_SIZE: 3000000
 
 heuristics:
