@@ -13,16 +13,16 @@ class cPDFiDEmbeddedFile(cPluginParent):
     def Score(self):
         if '/EmbeddedFile' in self.oPDFiD.keywords and self.oPDFiD.keywords['/EmbeddedFile'].count > 0:
                 if self.oPDFiD.keywords['/EmbeddedFile'].hexcode > 0:
-                    return 1000, self.hits
+                    return 16, self.hits
                 else:
-                    return 50, self.hits
+                    return 15, self.hits
         return 0, self.hits
 
     def Instructions(self, score, hits):
-        if score == 1000:
+        if score == 16:
             return 'EmbeddedFile flag(s) are hex encoded. Sample is likely malicious.'
 
-        if score == 50:
+        if score == 15:
             return 'EmbeddedFile flag(s) detected. Sample requires further analysis.'
 
         if score == 0:

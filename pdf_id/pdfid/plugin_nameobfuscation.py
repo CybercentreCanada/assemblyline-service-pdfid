@@ -13,14 +13,14 @@ class cPDFiDNameObfuscation(cPluginParent):
 
     def Score(self):
         if sum([oCount.hexcode for oCount in self.oPDFiD.keywords.values()]) > 0:
-            return 1000, self.hits
+            return 18, self.hits
         else:
             return 0, self.hits
 
     def Instructions(self, score, hits):
         if score == 0:
             return "No hex encoded flags detected."
-        if score == 1000:
+        if score == 18:
             return 'Hex encoded flag(s) detected.'
 
 AddPlugin(cPDFiDNameObfuscation)

@@ -23,96 +23,163 @@ config:
   MAX_PDF_SIZE: 3000000
 
 heuristics:
-  - description: >-
-      Command detected to auto-open content
+  - description: Command detected to auto-open content
     filetype: "document/pdf"
     heur_id: 1
-    name: PDF_AutoOpen
-    score:
+    name: AutoOpen
+    score: 50
 
-  - description: There are byte(s) following the end of the PDF
+  - description: There are between 100 to 499 bytes following the end of the PDF
     filetype: "document/pdf"
     heur_id: 2
-    name: After last %%EOF
-    score:
+    name: 100+ bytes after last %%EOF
+    score: 100
 
   - description: Looking for /JBIG2Decode. Using the JBIG2 compression
     filetype: "document/pdf"
     heur_id: 3
     name: JBIG2Decode
-    score:
+    score: 50
 
   - description: Looking for /AcroForm.  This is an action launched by Forms
     filetype: "document/pdf"
     heur_id: 4
     name: AcroForm
-    score:
+    score: 25
 
   - description: Looking for /RichMedia.  This can be use to embed Flash in a PDF
     filetype: "document/pdf"
     heur_id: 5
     name: RichMedia
-    score:
+    score: 25
 
   - description: Malformed object content over 100 bytes extracted by pdfparser
     filetype: "document/pdf"
     heur_id: 6
     name: Malformed Content
-    score:
+    score: 0
 
   - description: Embedded object streams in sample. Sometimes used to hide malicious content.
     filetype: "document/pdf"
     heur_id: 7
     name: Objstms Detected
-    score:
+    score: 0
 
   - description: Suspicious object content carved from PDF. Displayed in service results.
     filetype: "document/pdf"
     heur_id: 8
     name: Carved Object Content
-    score:
+    score: 0
 
   - description: Suspicious object in PDF sample extracted.
     filetype: "document/pdf"
     heur_id: 9
     name: Object Extracted
-    score:
+    score: 0
 
   - description: According to configuration parameters, sample too large for service to scan.
     filetype: "document/pdf"
     heur_id: 10
     name: PDF too large
-    score:
+    score: 0
 
   - description: Found the /Encrypt string in the file. Will need to figure out why.
     filetype: "document/pdf"
     heur_id: 11
     name: Encrypt
-    score:
+    score: 25
 
   - description: Outside stream entropy of > 5. Possible hidden content.
     filetype: "document/pdf"
     heur_id: 12
     name: High Entropy
-    score:
+    score: 500
 
   - description: Sample "obj" keyword count does not equal "endobj" keyword count.
     filetype: "document/pdf"
     heur_id: 13
     name: Obj/Endobj Mismatch
-    score:
+    score: 50
 
   - description: Sample "stream" keyword count does not equal "endstream" count.
     filetype: "document/pdf"
     heur_id: 14
     name: Stream/Endstream Mismatch
-    score:
+    score: 50
 
   - description: Sample contains embedded files.
     filetype: "document/pdf"
     heur_id: 15
     name: Embedded file
-    score:
+    score: 50
+
+  - description: Sample contains Hex encoded embedded files.
+    filetype: "document/pdf"
+    heur_id: 16
+    name: Hex Encoded Embedded File
+    score: 1000
+
+  - description: There are more then 500 bytes following the end of the PDF
+    filetype: "document/pdf"
+    heur_id: 17
+    name: 500+ bytes after last %%EOF
+    score: 500
+
+  - description: Detected hex encoded flags
+    filetype: "document/pdf"
+    heur_id: 18
+    name: Hex Encoded Flags
+    score: 1000
+
+  - description: Javascript is present in the PDF file
+    filetype: "document/pdf"
+    heur_id: 19
+    name: Javascript
+    score: 100
+
+  - description: Number of colors is expressed with more than 3 bytes
+    filetype: "document/pdf"
+    heur_id: 20
+    name: Color
+    score: 50
+
+  - description: Go to remote entry found in PDF
+    filetype: "document/pdf"
+    heur_id: 21
+    name: GoToE
+    score: 50
+
+  - description: Go to embedded entry found in PDF
+    filetype: "document/pdf"
+    heur_id: 22
+    name: GoToR
+    score: 50
+
+  - description: Indicates XML Forms Architecture. These can be used to hide malicious code
+    filetype: "document/pdf"
+    heur_id: 23
+    name: XFA
+    score: 25
+
+  - description: Sample contains URLs
+    filetype: "document/pdf"
+    heur_id: 24
+    name: URI
+    score: 0
+
+  - description: Sample contains annotations. Not suspicious but should be examined if other signs of maliciousness present.
+    filetype: "document/pdf"
+    heur_id: 25
+    name: XFA
+    score: 0
+
+  - description: Document contains only one page. Most malicious documents will only contain one page.
+    filetype: "document/pdf"
+    heur_id: 26
+    name: Only one page
+    score: 50
+
+
 
 docker_config:
   image: cccs/assemblyline-service-pdfid:latest

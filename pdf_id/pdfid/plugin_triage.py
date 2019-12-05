@@ -26,18 +26,13 @@ class cPDFiDTriage(cPluginParent):
             self.hits.add('/JS')
         if '/JavaScript' in self.oPDFiD.keywords and self.oPDFiD.keywords['/JavaScript'].count > 0:
             self.hits.add('/JavaScript')
-        if self.oPDFiD.keywords['/JavaScript'].count > 0 \
-                or self.oPDFiD.keywords['/JS'].count > 0:
-            score += 100
         for keyword in ('/JBIG2Decode', '/Colors > 2^24'):
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-                score += 50
         # Auto open/Launch - separated so we do not double-score
         for keyword in ['/AA', '/GoToE', '/GoToR', '/OpenAction', '/Launch']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-                score += 50
         # Forms, Flash, XFA and Encrypted content
         for keyword in ['/AcroForm', '/Encrypt', '/RichMedia', '/XFA']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:

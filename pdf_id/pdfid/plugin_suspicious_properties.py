@@ -14,25 +14,19 @@ class cPDFiDSuspiciousProperties(cPluginParent):
         score = 0
         # Entropy. Typically data outside of streams contain dictionaries & pdf entities (mostly all ASCII text).
         if self.oPDFiD.non_stream_entropy > 6:
-            score += 500
             self.hits.add("entropy")
         # Pages. Many malicious PDFs will contain only one page.
         if '/Page' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Page'].count == 1:
-            score += 50
             self.hits.add("page")
         # Characters after last %%EOF.
         if self.oPDFiD.last_eof_bytes > 100:
             if self.oPDFiD.last_eof_bytes > 499:
-                score += 500
                 self.hits.add("eof5")
             else:
-                score += 100
                 self.hits.add("eof1")
         if self.oPDFiD.keywords['obj'].count != self.oPDFiD.keywords['endobj'].count:
-            score += 50
             self.hits.add("obj/endobj")
         if self.oPDFiD.keywords['stream'].count != self.oPDFiD.keywords['endstream'].count:
-            score += 50
             self.hits.add("stream/endstream")
 
         return score, self.hits

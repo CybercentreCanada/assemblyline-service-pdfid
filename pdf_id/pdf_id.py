@@ -1,123 +1,22 @@
+from copy import deepcopy
+
+from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
+
+from pdf_id.pdfid import pdfid
+from pdf_id.pdfparser import pdf_parser
+import hashlib
+import os
+import re
+import unicodedata
+
 from assemblyline.common.exceptions import NonRecoverableError
-from assemblyline.al.common.heuristics import Heuristic
-from assemblyline.al.common.result import Result, ResultSection, TEXT_FORMAT
-from assemblyline.al.common.result import SCORE, TAG_TYPE, TAG_WEIGHT
-from assemblyline.al.service.base import ServiceBase
-
-from textwrap import dedent
-
-os = None
-pdid = None
-pdfparser = None
-re = None
-PatternMatch = None
-unicodedata = None
+from assemblyline_v4_service.common.base import ServiceBase
+from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 
 
-# noinspection PyBroadException,PyCallingNonCallable
 class PDFId(ServiceBase):
-    AL_PDFID_001 = Heuristic("AL_PDFId_001", "PDF_AutoOpen", "document/pdf",
-                             dedent("""\
-                                        Command detected to auto-open content 
-                                        """))
-    AL_PDFID_002 = Heuristic("AL_PDFId_002", "After last %%EOF", "document/pdf",
-                             dedent("""\
-                                        There are byte(s) following the end of the PDF
-                                        """))
-    AL_PDFID_003 = Heuristic("AL_PDFId_003", "JBIG2Decode", "document/pdf",
-                             dedent("""\
-                                        looking for /JBIG2Decode. Using the JBIG2 compression
-                                        """))
-    AL_PDFID_004 = Heuristic("AL_PDFId_004", "AcroForm", "document/pdf",
-                             dedent("""\
-                                        looking for /AcroForm.  This is an action launched by Forms
-                                        """))
-    AL_PDFID_005 = Heuristic("AL_PDFId_005", "RichMedia", "document/pdf",
-                             dedent("""\
-                                        looking for /RichMedia.  This can be use to embed Flash in a PDF
-                                        """))
-    AL_PDFID_006 = Heuristic("AL_PDFId_006", "Malformed Content", "document/pdf",
-                             dedent("""\
-                                     Malformed object content over 100 bytes extracted by pdfparser
-                                     """))
-    AL_PDFID_007 = Heuristic("AL_PDFId_007", "Objstms Detected", "document/pdf",
-                             dedent("""\
-                                    Embedded object streams in sample. Sometimes used to hide malicious content.
-                                    """))
-    AL_PDFID_008 = Heuristic("AL_PDFId_008", "Carved Object Content", "document/pdf",
-                             dedent("""\
-                                    Suspicious object content carved from PDF. Displayed in service results.
-                                    """))
-    AL_PDFID_009 = Heuristic("AL_PDFId_009", "Object Extracted", "document/pdf",
-                             dedent("""\
-                                    Suspicious object in PDF sample extracted.
-                                    """))
-    AL_PDFID_010 = Heuristic("AL_PDFId_010", "PDF too large", "document/pdf",
-                             dedent("""\
-                                    According to configuration parameters, sample too large for service to scan.
-                                    """))
-    AL_PDFID_011 = Heuristic("AL_PDFId_011", "Encrypt", "document/pdf",
-                             dedent("""\
-                                            Found the /Encrypt string in the file. Will need to figure out why.
-                                            """))
-    AL_PDFID_012 = Heuristic("AL_PDFId_012", "High Entropy", "document/pdf",
-                             dedent("""\
-                                        Outside stream entropy of > 5. Possible hidden content.
-                                        """))
-    AL_PDFID_013 = Heuristic("AL_PDFId_013", "Obj/Endobj Mismatch", "document/pdf",
-                             dedent("""\
-                                        Sample "obj" keyword count does not equal "endobj" keyword count.
-                                        """))
-    AL_PDFID_014 = Heuristic("AL_PDFId_014", "Stream/Endstream Mismatch", "document/pdf",
-                             dedent("""\
-                                        Sample "stream" keyword count does not equal "endstream" count.
-                                        """))
-    AL_PDFID_015 = Heuristic("AL_PDFId_015", "Embedded file", "document/pdf",
-                             dedent("""\
-                                        Sample contains embedded files.
-                                        """))
-    SERVICE_ACCEPTS = 'document/pdf'
-    SERVICE_CATEGORY = "Static Analysis"
-    SERVICE_DESCRIPTION = "This service extracts metadata from PDFs using Didier Stevens PDFId & PDFParser."
-    SERVICE_ENABLED = True
-    SERVICE_REVISION = ServiceBase.parse_revision('$Id$')
-    SERVICE_VERSION = '1'
-    SERVICE_CPU_CORES = 0.5
-    SERVICE_RAM_MB = 256
-    SERVICE_DEFAULT_CONFIG = {
-        'ADDITIONAL_KEYS': [
-            '/URI',
-            '/GoToE',
-            '/GoToR',
-            '/XObject'
-        ],
-        'HEURISTICS': [
-            'al_services/alsvc_pdfid/pdfid/plugin_embeddedfile',
-            'al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation',
-            'al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties',
-            'al_services/alsvc_pdfid/pdfid/plugin_triage'
-        ],
-        'MAX_PDF_SIZE': 3000000,
-    }
-
     def __init__(self, cfg=None):
         super(PDFId, self).__init__(cfg)
-
-    # noinspection PyUnresolvedReferences
-    def import_service_deps(self):
-        global deepcopy, hashlib, os, pdid, pdfparser, re
-        from copy import deepcopy
-        from pdfid import pdfid as pdid
-        from pdfparser import pdf_parser as pdfparser
-        import hashlib
-        import os
-        import re
-        try:
-            from al_services.alsvc_frankenstrings.balbuzard.patterns import PatternMatch
-            import unicodedata
-            global PatternMatch, unicodedata
-        except ImportError:
-            pass
 
     @staticmethod
     def get_pdfid(path, additional_keywords, options, deep):
@@ -133,14 +32,14 @@ class PDFId(ServiceBase):
             PDFId result and error list.
         """
         try:
-            pdfid_result, errors = pdid.PDFiDMain(path, additional_keywords, options, deep)
+            pdfid_result, errors = pdfid.PDFiDMain(path, additional_keywords, options, deep)
         except Exception as e:
             raise Exception("PDFID failed to run on sample. Error: {}" .format(e))
 
         return pdfid_result, errors
 
     @staticmethod
-    def get_pdfparser(path, working_dir, options):
+    def get_pdf_parser(path, working_dir, options):
         """Run PDF Parser code on sample.
 
         Args:
@@ -152,11 +51,11 @@ class PDFId(ServiceBase):
             PDF Parser result and error list.
         """
         try:
-            pdfparser_statresult, errors = pdfparser.PDFParserMain(path, working_dir, **options)
+            pdf_parser_statresult, errors = pdf_parser.pdf_parserMain(path, working_dir, **options)
         except Exception as e:
-            raise Exception("PDFParser failed to run on sample. Error: {}" .format(e))
+            raise Exception("pdf_parser failed to run on sample. Error: {}" .format(e))
 
-        return pdfparser_statresult, errors
+        return pdf_parser_statresult, errors
 
     def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
         """Extract metadata, keyword objects and content of interest from a PDF sample using PDFId, PDFId plugins,
@@ -178,8 +77,7 @@ class PDFId(ServiceBase):
         all_errors = set()
         embed_present = False
         objstms = False
-        hrs = set()
-        res = ResultSection(title_text=res_txt, score=SCORE.NULL)
+        res = ResultSection(title_text=res_txt)
         carved_extracted_shas = set()
 
         if request.deep_scan:
@@ -193,7 +91,7 @@ class PDFId(ServiceBase):
         except Exception as e:
             raise NonRecoverableError(e)
         # Parse PDFId results
-        pdfidres = ResultSection(title_text="PDFID Results", score=SCORE.NULL, parent=res)
+        pdfidres = ResultSection(title_text="PDFID Results", parent=res)
         if len(pdfid_result) == 0:
             pdfidres.add_line("No results generated for file. Please see errors.")
         else:
@@ -204,31 +102,31 @@ class PDFId(ServiceBase):
                     pdfidres.add_line(version[0])
                 properties = pdfid_result.get("Properties", None)
                 if properties:
-                    pres = ResultSection(title_text="PDF Properties", score=SCORE.NULL, parent=pdfidres)
+                    pres = ResultSection(title_text="PDF Properties", parent=pdfidres)
                     for plist in properties:
                         pres.add_line("{0}: {1}" .format(plist[0], plist[1]))
                         if plist[0] == "/ModDate":
-                            pres.add_tag(TAG_TYPE['PDF_DATE_MOD'], plist[1], TAG_WEIGHT['MED'])
+                            pres.add_tag('file.pdf.date.modified', plist[1])
                         elif plist[0] == "/CreationDate":
-                            pres.add_tag(TAG_TYPE['PDF_DATE_CREATION'], plist[1], TAG_WEIGHT['MED'])
+                            pres.add_tag('file.pdf.date.creation', plist[1])
                         elif plist[0] == "/LastModified":
-                            pres.add_tag(TAG_TYPE['PDF_DATE_LASTMODIFIED'], plist[1], TAG_WEIGHT['MED'])
+                            pres.add_tag('file.pdf.date.last_modified', plist[1])
                         elif plist[0] == "/SourceModified":
-                            pres.add_tag(TAG_TYPE['PDF_DATE_SOURCEMODIFIED'], plist[1], TAG_WEIGHT['MED'])
+                            pres.add_tag('file.pdf.date.source_modified', plist[1])
                         elif plist[0] == "/pdfx":
-                            pres.add_tag(TAG_TYPE['PDF_DATE_PDFX'], plist[1], TAG_WEIGHT['MED'])
+                            pres.add_tag('file.pdf.date.pdfx', plist[1])
                 entropy = pdfid_result.get("Entropy", None)
                 if entropy:
-                    enres = ResultSection(title_text="Entropy", score=SCORE.NULL, parent=pdfidres)
+                    enres = ResultSection(title_text="Entropy", parent=pdfidres)
                     for enlist in entropy:
                         enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
             flags = pdfid_result.get("Flags", None)
             if flags:
-                fres = ResultSection(title_text="PDF Keyword Flags", score=SCORE.NULL, parent=pdfidres)
+                fres = ResultSection(title_text="PDF Keyword Flags", parent=pdfidres)
                 for flist in flags:
                     if flist[0] == "/ObjStm":
                         objstms = True
-                        hrs.add(PDFId.AL_PDFID_007)
+                        fres.set_heuristic(7)
                     if len(flist) == 3:
                         fres.add_line("{0}:Count: {1}, Hex-Encoded Count: {2}" .format(flist[0], flist[1], flist[2]))
                     else:
@@ -240,30 +138,74 @@ class PDFId(ServiceBase):
             if plugin or len(triage_keywords) > 0:
                 run_pdfparse = True
                 if plugin:
-                    plres = ResultSection(title_text="Plugin Results", score=SCORE.NULL, parent=pdfidres)
+                    plres = ResultSection(title_text="Plugin Results", parent=pdfidres)
                     for pllist in plugin:
-                        modres = ResultSection(title_text=pllist[0], score=int(pllist[1]), parent=plres,
-                                               body_format=TEXT_FORMAT.MEMORY_DUMP)
-                        modres.add_line(pllist[2])
+                        pl_name, pl_heur, pl_text = pllist
+                        modres = ResultSection(title_text=pl_name, parent=plres,
+                                               body_format=BODY_FORMAT.MEMORY_DUMP)
+                        if pl_heur > 0:
+                            modres.set_heuristic(pl_heur)
                         # Check if embedded files are present
-                        if pllist[0] == 'EmbeddedFile':
-                            hrs.add(PDFId.AL_PDFID_015)
-                            if int(pllist[1]) > 0:
-                                embed_present = True
-                        # Grab suspicious properties for pdfparser
-                        if pllist[0] == 'Triage':
-                            triage_keywords.update([re.sub(r'(\"|:|/)', '', x) for x in
-                                               re.findall(r'\"/[^\"]*\":', pllist[2], re.IGNORECASE)])
+                        if pl_name == 'EmbeddedFile':
+                            if pl_heur > 0:
+                                modres.add_line(pl_text)
+                            embed_present = True
+                            
+                        # Grab suspicious properties for pdf_parser
+                        if pl_name == 'Triage':
+                            for line in pl_text.splitlines():
+                                lineres = ResultSection(title_text=line, parent=modres)
+                                if '/JS' in line:
+                                    lineres.set_heuristic(19)
+                                elif '/JavaScript' in line:
+                                    lineres.set_heuristic(19)
+                                elif '/JBIG2Decode' in line:
+                                    lineres.set_heuristic(3)
+                                elif '/Colors > 2^24' in line:
+                                    lineres.set_heuristic(20)
+                                elif '/AA' in line:
+                                    lineres.set_heuristic(1)
+                                elif '/Launch' in line:
+                                    lineres.set_heuristic(1)
+                                elif '/OpenAction' in line:
+                                    lineres.set_heuristic(1)
+                                elif '/GoToE' in line:
+                                    lineres.set_heuristic(21)
+                                elif '/GoToR' in line:
+                                    lineres.set_heuristic(22)
+                                elif '/Encrypt' in line:
+                                    lineres.set_heuristic(11)
+                                elif '/AcroForm' in line:
+                                    lineres.set_heuristic(4)
+                                elif '/RichMedia' in line:
+                                    lineres.set_heuristic(5)
+                                elif '/XFA' in line:
+                                    lineres.set_heuristic(23)
+                                elif '/Annot' in line:
+                                    lineres.set_heuristic(25)
+                                elif '/ObjStm' in line:
+                                    lineres.set_heuristic(7)
+                                elif '/URI' in line:
+                                    lineres.set_heuristic(24)
+
+                        triage_keywords.update([re.sub(r'([":/])', '', x) for x in
+                                                    re.findall(r'\"/[^\"]*\":', pl_text, re.IGNORECASE)])
                         # Add heuristics for suspicious properties
-                        if pllist[0] == 'Suspicious Properties':
-                            if "eof2" in pllist[2] or "eof5" in pllist[2]:
-                                hrs.add(PDFId.AL_PDFID_002)
-                            if "entropy" in pllist[2]:
-                                hrs.add(PDFId.AL_PDFID_012)
-                            if "obj/endobj" in pllist[2]:
-                                hrs.add(PDFId.AL_PDFID_013)
-                            if "stream/endstream" in pllist[2]:
-                                hrs.add(PDFId.AL_PDFID_014)
+                        if pl_name == 'Suspicious Properties':
+                            for line in pl_text.splitlines():
+                                lineres = ResultSection(title_text=line, parent=modres)
+                                if "eof2" in line:
+                                    lineres.set_heuristic(2)
+                                elif "eof5" in line:
+                                    lineres.set_heuristic(17)
+                                elif "page" in line:
+                                    lineres.set_heuristic(26)
+                                elif "entropy" in line:
+                                    lineres.set_heuristic(12)
+                                elif "obj/endobj" in line:
+                                    lineres.set_heuristic(13)
+                                elif "stream/endstream" in line:
+                                    lineres.set_heuristic(14)
 
         for e in errors:
             all_errors.add(e)
@@ -272,7 +214,7 @@ class PDFId(ServiceBase):
 
         if run_pdfparse:
             # CALL PDF parser and extract further information
-            pdfparserres = ResultSection(title_text="PDF Parser Results", score=SCORE.NULL)
+            pdf_parserres = ResultSection(title_text="PDF Parser Results")
             # STATISTICS
             # Do not run for objstms, which are being analyzed when get_malform == False
             if get_malform:
@@ -280,22 +222,22 @@ class PDFId(ServiceBase):
                     "stats": True,
                 }
                 try:
-                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
                 except Exception as e:
-                    pdfparser_result = None
+                    pdf_parser_result = None
                     self.log.debug(e)
 
-                if pdfparser_result:
-                    if len(pdfparser_result) == 0:
-                        pdfparserres.add_line("No statistical results generated for file. Please see errors.")
+                if pdf_parser_result:
+                    if len(pdf_parser_result) == 0:
+                        pdf_parserres.add_line("No statistical results generated for file. Please see errors.")
                     else:
-                        version = pdfparser_result.get("version", None)
+                        version = pdf_parser_result.get("version", None)
                         if version:
-                            pdfparserres.add_line(version[0])
-                        stats = pdfparser_result.get("stats", None)
+                            pdf_parserres.add_line(version[0])
+                        stats = pdf_parser_result.get("stats", None)
                         if stats:
-                            sres = ResultSection(title_text="PDF Statistcs", score=SCORE.NULL, parent=pdfparserres,
-                                                 body_format=TEXT_FORMAT.MEMORY_DUMP)
+                            sres = ResultSection(title_text="PDF Statistcs", parent=pdf_parserres,
+                                                 body_format=BODY_FORMAT.MEMORY_DUMP)
                             for p in stats:
                                 sres.add_line(p)
                     for e in errors:
@@ -307,19 +249,7 @@ class PDFId(ServiceBase):
             jbig_objs = set()
 
             for keyword in triage_keywords:
-                # Heuristics
-                if keyword in ['AA', 'OpenAction', 'Launch']:
-                    hrs.add(PDFId.AL_PDFID_001)
-                if keyword == 'JBIG2Decode':
-                    hrs.add(PDFId.AL_PDFID_003)
-                if keyword == 'AcroForm':
-                    hrs.add(PDFId.AL_PDFID_004)
-                if keyword == 'RichMedia':
-                    hrs.add(PDFId.AL_PDFID_005)
-                if keyword == 'Encrypt':
-                    hrs.add(PDFId.AL_PDFID_011)
-
-                res.add_tag('FILE_STRING', keyword, weight=0)
+                res.add_tag('file.string.extracted', keyword)
                 # ObjStms handled differently
                 if keyword == 'ObjStm':
                     continue
@@ -328,13 +258,13 @@ class PDFId(ServiceBase):
                     "search": keyword,
                 }
                 try:
-                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
                 except Exception as e:
-                    pdfparser_result = None
+                    pdf_parser_result = None
                     self.log.debug(e)
 
-                if pdfparser_result:
-                    for p in pdfparser_result['parts']:
+                if pdf_parser_result:
+                    for p in pdf_parser_result['parts']:
                         content = ""
                         references = []
                         # Trailer will be extracted anyways, try and grab all references anyways -- will be messy
@@ -396,7 +326,7 @@ class PDFId(ServiceBase):
                                 # Multiple references might be in a list, i.e. /Annot # # R vs. /Annots [# # R # # R]
                                 islist = re.match(r"[s]?[ ]?\[([0-9]* [0-9]* R[ \\rn]{0,8})*\]", content)
                                 if islist:
-                                    content = re.sub(r"\[|\]", "", islist.group(0).replace("s ", '')
+                                    content = re.sub(r"[\[\]]", "", islist.group(0).replace("s ", '')
                                                      .replace("R ", "R,")).split(",")
                                     break
                                 # References might be with instructions, i.e. [# # R /FitH null]
@@ -419,14 +349,14 @@ class PDFId(ServiceBase):
                                         "get_object_detail": True
                                     }
                                     try:
-                                        pdfparser_subresult, err = self.get_pdfparser(path, working_dir, options)
+                                        pdf_parser_subresult, err = self.get_pdf_parser(path, working_dir, options)
                                     except Exception as e:
-                                        pdfparser_subresult = None
+                                        pdf_parser_subresult = None
                                         err = []
                                         self.log.debug(e)
 
-                                    if pdfparser_subresult:
-                                        for sub_p in pdfparser_subresult['parts']:
+                                    if pdf_parser_subresult:
+                                        for sub_p in pdf_parser_subresult['parts']:
                                             sub_references = sub_p.split("\n", 3)[2].replace('Referencing:', '')\
                                                 .strip().split(", ")
                                             ptyp = sub_p.split("\n", 2)[1].replace('Type:', '').strip().replace("/", "")
@@ -447,15 +377,15 @@ class PDFId(ServiceBase):
                                                     except Exception:
                                                         pass
                                             # If not, extract object detail in to carved output
-                                            elif pdfparser_subresult['obj_details'] != "":
+                                            elif pdf_parser_subresult['obj_details'] != "":
                                                 try:
                                                     objnum = sub_p.split("\n", 1)[0].split(" ")[1]
                                                     if objnum in carved_content:
                                                         carved_content[objnum]\
-                                                            .append({keyword: pdfparser_subresult['obj_details']})
+                                                            .append({keyword: pdf_parser_subresult['obj_details']})
                                                     else:
                                                         carved_content[objnum] = \
-                                                            [{keyword: pdfparser_subresult['obj_details']}]
+                                                            [{keyword: pdf_parser_subresult['obj_details']}]
                                                 except Exception:
                                                     continue
 
@@ -488,22 +418,22 @@ class PDFId(ServiceBase):
 
             # Add carved content to result output
             if len(carved_content) > 0 or len(jbig_objs) > 0:
-                carres = ResultSection(title_text="Content of Interest", score=SCORE.NULL, parent=pdfparserres)
+                carres = ResultSection(title_text="Content of Interest", parent=pdf_parserres)
             else:
                 carres = None
 
             if len(jbig_objs) > 0:
                     jbigres = ResultSection(title_text="The following Object IDs are JBIG2DECODE streams:",
-                                            score=SCORE.NULL, body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
+                                            body_format=BODY_FORMAT.MEMORY_DUMP, parent=carres)
                     jbigres.add_line(', '.join(map(str, jbig_objs)))
             if len(carved_content) > 0:
-                hrs.add(PDFId.AL_PDFID_008)
-                for k, l in sorted(carved_content.iteritems()):
+                carres.set_heuristic(8)
+                for k, l in sorted(carved_content.items()):
                     for d in l:
                         for keyw, con in d.iteritems():
                             subres = ResultSection(title_text="Content for Keyword hit from Object {0}:  '{1}':"
-                                                   .format(k, keyw), score=SCORE.NULL,
-                                                   body_format=TEXT_FORMAT.MEMORY_DUMP, parent=carres)
+                                                   .format(k, keyw),
+                                                   body_format=BODY_FORMAT.MEMORY_DUMP, parent=carres)
                             if len(con) < 500:
                                 subres.add_line(con)
                                 # Check for IOC content
@@ -517,11 +447,11 @@ class PDFId(ServiceBase):
                                         for ty, val in st_value.iteritems():
                                             if val == "":
                                                 asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                                subres.add_tag(TAG_TYPE[ty], asc_asc, TAG_WEIGHT.LOW)
+                                                subres.add_tag(ty, asc_asc)
                                             else:
                                                 ulis = list(set(val))
                                                 for v in ulis:
-                                                    subres.add_tag(TAG_TYPE[ty], v, TAG_WEIGHT.LOW)
+                                                    subres.add_tag(ty, v)
                             else:
                                 crv_sha = hashlib.sha256(con).hexdigest()
                                 subres.add_line("Content over 500 bytes, see extracted file with sha256 {}"
@@ -557,34 +487,34 @@ class PDFId(ServiceBase):
                         "get_malform": get_malform
                     }
                 try:
-                    pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                    pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
                 except Exception as e:
-                    pdfparser_result = None
+                    pdf_parser_result = None
                     self.log.debug(e)
 
                 embed_extracted = set()
-                if pdfparser_result:
-                    if len(pdfparser_result) == 0:
-                        pdfparserres.add_line("No structure information generated for file. Please see errors.")
+                if pdf_parser_result:
+                    if len(pdf_parser_result) == 0:
+                        pdf_parserres.add_line("No structure information generated for file. Please see errors.")
                     else:
                         # PDF Parser will write any malformed content over 100 bytes to a file
-                        files = pdfparser_result.get("files", None)
+                        files = pdf_parser_result.get("files", None)
                         if files:
                             for f, l in files.iteritems():
                                 if f == 'malformed':
                                     if len(l) > 0:
-                                        hrs.add(PDFId.AL_PDFID_006)
+                                        pdf_parserres.set_heuristic(6)
                                     for i in l:
                                         request.add_extracted(i,
                                                               "Extracted malformed content in PDF Parser Analysis.")
 
-                        parts = pdfparser_result.get("parts", None)
+                        parts = pdf_parser_result.get("parts", None)
                         # Extract service will extract the sample's embedded files.
                         # However we want to make note of them so that they are not extracted again below
                         if parts:
-                            pres = ResultSection(title_text="PDF Elements", score=SCORE.NULL,
-                                                 parent=pdfparserres,
-                                                 body_format=TEXT_FORMAT.MEMORY_DUMP)
+                            pres = ResultSection(title_text="PDF Elements",
+                                                 parent=pdf_parserres,
+                                                 body_format=BODY_FORMAT.MEMORY_DUMP)
                             for p in sorted(parts):
                                 pres.add_line(p)
                                 if "Type: /EmbeddedFile" in p:
@@ -595,58 +525,70 @@ class PDFId(ServiceBase):
                 obj_to_extract = obj_extract_triage - embed_extracted - jbig_objs
 
                 if len(obj_to_extract) > 0:
+                    e_success = False
                     options = {
                         "filter": True,
                         "object": obj_to_extract,
                         "dump": "extracted_obj_",
                     }
                     try:
-                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                        pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
                     except Exception as e:
-                        pdfparser_result = None
+                        pdf_parser_result = None
                         self.log.debug(e)
-                    if pdfparser_result:
-                        files = pdfparser_result.get("files", None)
+                    if pdf_parser_result:
+                        files = pdf_parser_result.get("files", None)
                         if files:
                             for f, l in files.iteritems():
                                 if f == 'embedded':
                                     for i in l:
                                         request.add_extracted(i, "Object {} extracted in PDF Parser Analysis."
                                                               .format(i.replace("extracted_obj_", "")))
-                                        hrs.add(PDFId.AL_PDFID_009)
+                                        e_success = False
 
                         for e in errors:
                             all_errors.add(e)
 
+                    if e_success:
+                        extract_res = ResultSection(title_text="Extracted embedded objects",
+                                                         parent=pdf_parserres)
+                        extract_res.set_heuristic(9)
+
                 # Extract jbig2decode objects in deep scan mode
                 if request.deep_scan and len(jbig_objs) > 0:
+                    je_success = False
                     options = {
                         "object": jbig_objs,
                         "dump": "extracted_obj_",
                     }
                     try:
-                        pdfparser_result, errors = self.get_pdfparser(path, working_dir, options)
+                        pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
                     except Exception as e:
-                        pdfparser_result = None
+                        pdf_parser_result = None
                         self.log.debug(e)
-                    if pdfparser_result:
-                        files = pdfparser_result.get("files", None)
+                    if pdf_parser_result:
+                        files = pdf_parser_result.get("files", None)
                         if files:
                             for f, l in files.iteritems():
                                 if f == 'embedded':
                                     for i in l:
+                                        je_success = True
                                         request.add_extracted(i, "JBIG2DECODE object {} extracted in PDF "
                                                                  "Parser Analysis."
                                                               .format(i.replace("extracted_obj_", "")))
-                                        hrs.add(PDFId.AL_PDFID_009)
 
                         for e in errors:
                             all_errors.add(e)
 
-            if len(pdfparserres.subsections) > 0:
-                res.add_section(pdfparserres)
+                    if je_success:
+                        jbig_extract_res = ResultSection(title_text="Extracted JBIG2Decode objects",
+                                                         parent=pdf_parserres)
+                        jbig_extract_res.set_heuristic(9)
 
-        return res, hrs, objstms, all_errors
+            if len(pdf_parserres.subsections) > 0:
+                res.add_subsection(pdf_parserres)
+
+        return res, objstms, all_errors
 
     def write_objstm(self, path, working_dir, objstm, objstm_path):
         """Write object stream (objstm) to file as a mock PDF.
@@ -673,17 +615,17 @@ class PDFId(ServiceBase):
             "raw": True,
         }
         try:
-            pdfparser_subresult, err = self.get_pdfparser(path, working_dir, options)
+            pdf_parser_subresult, err = self.get_pdf_parser(path, working_dir, options)
         except Exception as e:
-            pdfparser_subresult = None
+            pdf_parser_subresult = None
             self.log.debug(e)
 
-        if pdfparser_subresult:
-            for sub_p in pdfparser_subresult['parts']:
+        if pdf_parser_subresult:
+            for sub_p in pdf_parser_subresult['parts']:
                 if sub_p.split("\n", 4)[3] == "Contains stream":
                     stream_present = True
             if stream_present:
-                files = pdfparser_subresult.get("files", None)
+                files = pdf_parser_subresult.get("files", None)
                 if files:
                     for fi, l in files.iteritems():
                         if fi == 'embedded' and len(l) > 0:
@@ -744,8 +686,8 @@ class PDFId(ServiceBase):
         }
 
         try:
-            pdfparser_result, errors = self.get_pdfparser(path, working_dir, options_objstm)
-            parts = pdfparser_result.get("parts", None)
+            pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options_objstm)
+            parts = pdf_parser_result.get("parts", None)
         except Exception as e:
             parts = None
             self.log.debug(e)
@@ -767,16 +709,16 @@ class PDFId(ServiceBase):
 
     def execute(self, request):
         """Main Module. See README for details."""
-        max_size = self.cfg.get('MAX_PDF_SIZE', 3000000)
+        max_size = self.config.get('MAX_PDF_SIZE', 3000000)
         result = Result()
         request.result = result
         if (request.task.size or 0) < max_size or request.deep_scan:
-            path = request.download().encode('ascii', 'ignore')
+            path = request.file_path
             working_dir = self.working_directory
 
             # CALL PDFID and identify all suspicious keyword streams
-            additional_keywords = self.cfg.get('ADDITIONAL_KEYS', self.SERVICE_DEFAULT_CONFIG['ADDITIONAL_KEYS'])
-            heur = deepcopy(self.cfg.get('HEURISTICS', self.SERVICE_DEFAULT_CONFIG['HEURISTICS']))
+            additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
+            heur = deepcopy(self.config.get('HEURISTICS', []))
             # Update will break triage plugin as it now requires GoToE and GoToR to be default.
             # TODO: Remove this code for AL version 4
             if '/GoToE' not in additional_keywords and 'al_services/alsvc_pdfid/pdfid/plugin_triage' in heur:
@@ -801,12 +743,10 @@ class PDFId(ServiceBase):
             all_errors = set()
 
             res_txt = "Main Document Results"
-            res, heurs, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur,
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur,
                                                                     additional_keywords)
-            result.add_result(res)
+            result.add_section(res)
 
-            for h in heurs:
-                result.report_heuristic(h)
             for e in errors:
                 all_errors.add(e)
 
@@ -818,36 +758,23 @@ class PDFId(ServiceBase):
                     parent_obj = osf.split("_")[1]
                     res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
                     # It is going to look suspicious as the service created the PDF
-                    try:
-                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_suspicious_properties")
-                    except Exception:
-                        pass
-                    try:
-                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_embeddedfile")
-                    except Exception:
-                        pass
-                    try:
-                        heur.remove("al_services/alsvc_pdfid/pdfid/plugin_nameobfuscation")
-                    except Exception:
-                        pass
+                    heur = [x for x in heur if 'plugin_suspicious_properties' not in x
+                            and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
 
-                    res, heurs, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
+                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
                                                                             additional_keywords, get_malform=False)
-                    for h in heurs:
-                        result.report_heuristic(h)
 
                     if len(res.tags) > 0:
                         obj_cnt += 1
-                        result.add_result(res)
+                        result.add_section(res)
 
             if len(all_errors) > 0:
-                erres = ResultSection(title_text="Errors Analyzing PDF", score=SCORE.NULL)
+                erres = ResultSection(title_text="Errors Analyzing PDF")
                 for e in all_errors:
                     erres.add_line(e)
-                result.add_result(erres)
+                result.add_section(erres)
 
         else:
-            result.report_heuristic(PDFId.AL_PDFID_010)
-            request.result.add_section(ResultSection(SCORE['NULL'], "PDF Analysis of the file was"
-                                                                    " skipped because the file is "
-                                                                    "too big (limit is 3 MB)."))
+            section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
+            section.set_heuristic(10)
+            request.result.add_section(section)
