@@ -828,20 +828,15 @@ def PDFiDMain(filename, additional_keywords, heuristics, deep_scan=False):
     global plugins
     plugins = []
 
-    all_names = False
-    # This appears to report on all keywords, which output is extensive, turning off
-    #if deep_scan:
-        #all_names = True
-
     # Options
     options = {
-        'all': all_names,
+        'all': False,
         'force': True,
         'verbose': False,
         'extra': True,
         'literal': False,
         'select': '',
-        'minimumscore': 1,
+        'minimumscore': 0,
         'additional_keywords': [x for x in additional_keywords]
     }
 

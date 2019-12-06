@@ -113,6 +113,8 @@ dumplinelength = 16
 #Convert 2 Bytes If Python 3
 def C2BIP3(string):
     if sys.version_info[0] > 2:
+        if isinstance(string, bytes):
+            return string
         return bytes([ord(x) for x in string])
     else:
         return string
@@ -677,9 +679,10 @@ class cPDFParseDictionary:
         return token[0] == CHAR_DELIMITER and token[1].rstrip().endswith('>>')
 
     def ParseDictionary(self, tokens):
-        state = 0 # start
+        state = 0  # start
+        key = value = None
         dictionary = []
-        while tokens != []:
+        while tokens:
             if state == 0:
                 if self.isOpenDictionary(tokens[0]):
                     state = 1
@@ -734,6 +737,8 @@ class cPDFParseDictionary:
                 else:
                     value.append(ConditionalCanonicalize(tokens[0][1], self.nocanonicalizedoutput))
             tokens = tokens[1:]
+
+        return None, tokens
 
     def Retrieve(self):
         return self.parsed
@@ -854,13 +859,15 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
     if dump:
         filtered = object.Stream(filt == True)
         if not filtered:
-            filtered = ''
-        if filtered.startswith('Unsupported filter: '):
+            filtered = b''
+        else:
+            filtered = C2BIP3(filtered)
+        if filtered.startswith(b'Unsupported filter: '):
             errors.add(filtered)
         elif len(filtered) > 10:
             try:
                 with open(dump, 'wb') as f:
-                    f.write(C2BIP3(filtered))
+                    f.write(filtered)
                 res += "Object extracted. See extracted files."
             except Exception as e:
                 errors.add('Error writing file %s: %s' % (dump, str(e)))
