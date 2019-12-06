@@ -1,10 +1,9 @@
-#!/usr/bin/env python
+"""
+Modified by CSE to fit ASSEMBLYLINE service
+"""
 
-#2013/11/04
-#2013/11/08
 
 class cPDFiDNameObfuscation(cPluginParent):
-#    onlyValidPDF = True
     name = 'Name Obfuscation plugin'
 
     def __init__(self, oPDFiD):
@@ -18,8 +17,6 @@ class cPDFiDNameObfuscation(cPluginParent):
             return 0, self.hits
 
     def Instructions(self, score, hits):
-        if score == 0:
-            return "No hex encoded flags detected."
         if score == 18:
             return 'Hex encoded flag(s) detected.'
 

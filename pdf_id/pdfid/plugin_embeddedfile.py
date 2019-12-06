@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+"""
+Modified by CSE to fit ASSEMBLYLINE service
+"""
 
-#2014/10/13
 
 class cPDFiDEmbeddedFile(cPluginParent):
-#    onlyValidPDF = True
     name = 'EmbeddedFile plugin'
 
     def __init__(self, oPDFiD):
@@ -20,10 +20,10 @@ class cPDFiDEmbeddedFile(cPluginParent):
 
     def Instructions(self, score, hits):
         if score == 16:
-            return 'EmbeddedFile flag(s) are hex encoded. Sample is likely malicious.'
+            return '/EmbeddedFile: EmbeddedFile flag(s) are hex encoded. Sample is likely malicious.'
 
         if score == 15:
-            return 'EmbeddedFile flag(s) detected. Sample requires further analysis.'
+            return '/EmbeddedFile: EmbeddedFile flag(s) detected. Sample requires further analysis.'
 
         if score == 0:
             return

@@ -1,14 +1,9 @@
-#!/usr/bin/env python
+"""
+Modified by CSE to fit ASSEMBLYLINE service
+"""
 
-#2014/09/30
-#2015/08/12 added options; changed scoring: /ObjStm 0.75; obj/endobj or stream/endstream discrepancy: 0.50
-#2015/08/13 added instructions
-#2017/10/29 added /URI
 
 class cPDFiDTriage(cPluginParent):
-    """
-    Modified by CSE to fit ASSEMBLYLINE Service
-    """
     onlyValidPDF = False
     name = 'Triage plugin'
 
@@ -20,7 +15,6 @@ class cPDFiDTriage(cPluginParent):
         """
         Modified by CSE to fit ASSEMBLYLINE Service
         """
-        score = 0
         # Javascript - separated so we do not double-score
         if '/JS' in self.oPDFiD.keywords and self.oPDFiD.keywords['/JS'].count > 0:
             self.hits.add('/JS')
@@ -41,7 +35,7 @@ class cPDFiDTriage(cPluginParent):
         for keyword in ['/Annot', '/ObjStm', '/URI']:
             if keyword in self.oPDFiD.keywords and self.oPDFiD.keywords[keyword].count > 0:
                 self.hits.add(keyword)
-        return score, self.hits
+        return 0, self.hits
 
     def Instructions(self, score, hits):
         """
@@ -49,31 +43,31 @@ class cPDFiDTriage(cPluginParent):
         Description information taken from https://blog.didierstevens.com/programs/pdf-tools/
         """
         instruct = {
-            '/JS': '"/JS": indicating javascript is present in the file.\n',
-            '/JavaScript': '"/JavaScript": indicating javascript is present in the file.\n',
-            '/AA': '"/AA": indicating automatic action to be performed when the page/document is viewed.\n',
-            '/Annot': '"/Annot": sample contains annotations. '
+            '/JS': '/JS: Javascript is present in the file.\n',
+            '/JavaScript': '/JavaScript: Javascript is present in the file.\n',
+            '/AA': '/AA: Automatic action to be performed when the page/document is viewed.\n',
+            '/Annot': '/Annot: Contains annotations. '
                       'Not suspicious but should be examined if other signs of maliciousness present.\n',
-            '/OpenAction': '"/OpenAction": indicating automatic action to be performed when the page/document '
+            '/OpenAction': '/OpenAction: Automatic action to be performed when the page/document '
                            'is viewed."\n',
-            '/AcroForm': '"/AcroForm": sample contains AcroForm object. These can be used to hide malicious code."\n',
-            '/JBIG2Decode': '"/JBIG2Decode": indicating JBIG2 compression."\n',
-            '/RichMedia': '"/RichMedia": indicating embedded Flash. \n',
-            '/Launch': '"/Launch": counts launch actions.\n',
-            '/Encrypt': '"/Encrypt": encrypted content in sample\n',
-            '/XFA': '"/XFA": indicates XML Forms Architecture. These can be used to hide malicious code.\n',
-            '/Colors > 2^24': '"/Colors > 2^24": hits when the number of colors is expressed with more than 3 bytes.\n',
-            '/ObjStm': '"/ObjStm": sample contains object stream(s). Can be used to obfuscate objects.\n',
-            '/URI': '"/URI": sample contains URLs.\n',
-            '/GoToE': '"/GoToE": Go to remote.\n',
-            '/GoToR': '"/GoToR": Go to embedded.\n'
+            '/AcroForm': '/AcroForm: Contains AcroForm object. These can be used to hide malicious code."\n',
+            '/JBIG2Decode': '/JBIG2Decode: JBIG2 compression used."\n',
+            '/RichMedia': '/RichMedia: Embedded Flash. \n',
+            '/Launch': '/Launch: Counts launch actions.\n',
+            '/Encrypt': '/Encrypt: Encrypted content in sample\n',
+            '/XFA': '/XFA: XML Forms Architecture. These can be used to hide malicious code.\n',
+            '/Colors > 2^24': '/Colors > 2^24: Number of colors is expressed with more than 3 bytes.\n',
+            '/ObjStm': '/ObjStm: Contains object stream(s). Can be used to obfuscate objects.\n',
+            '/URI': '/URI: Contains objects with URL(s).\n',
+            '/GoToE': '/GoToE: Go to remote.\n',
+            '/GoToR': '/GoToR: Go to embedded.\n'
         }
 
         message = "The following keywords have been flagged in this sample:\n"
         for h in hits:
             message += "{}".format(instruct.get(h))
 
-        if score > 0:
+        if len(hits) > 0:
             return message
 
         return
