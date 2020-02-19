@@ -182,6 +182,6 @@ heuristics:
 
 
 docker_config:
-  image: cccs/assemblyline-service-pdfid:latest
+  image: ${REGISTRY}cccs/assemblyline-service-pdfid:latest
   cpu_cores: 1
   ram_mb: 256
