@@ -108,9 +108,9 @@ class PDFId(ServiceBase):
                         if plist[0] == "/ModDate":
                             pres.add_tag('file.pdf.date.modified', plist[1])
                         elif plist[0] == "/CreationDate":
-                            pres.add_tag('file.pdf.date.creation', plist[1])
+                            pres.add_tag('file.date.creation', plist[1])
                         elif plist[0] == "/LastModified":
-                            pres.add_tag('file.pdf.date.last_modified', plist[1])
+                            pres.add_tag('file.date.last_modified', plist[1])
                         elif plist[0] == "/SourceModified":
                             pres.add_tag('file.pdf.date.source_modified', plist[1])
                         elif plist[0] == "/pdfx":
