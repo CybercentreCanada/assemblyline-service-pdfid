@@ -1,7 +1,5 @@
 from copy import deepcopy
 
-from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
-
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
 import hashlib
@@ -10,6 +8,7 @@ import re
 import unicodedata
 
 from assemblyline.common.exceptions import NonRecoverableError
+from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 
@@ -18,7 +17,8 @@ class PDFId(ServiceBase):
     def __init__(self, config=None):
         super(PDFId, self).__init__(config)
 
-    def get_pdfid(self, path, additional_keywords, options, deep):
+    @staticmethod
+    def get_pdfid(path, additional_keywords, options, deep):
         """Run PDFId code on sample.
 
         Args:
@@ -57,6 +57,7 @@ class PDFId(ServiceBase):
 
         return pdf_parser_statresult, errors
 
+    # noinspection PyBroadException
     def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
         """Extract metadata, keyword objects and content of interest from a PDF sample using PDFId, PDFId plugins,
         and PDF Parser.
@@ -434,10 +435,10 @@ class PDFId(ServiceBase):
                 carres = None
 
             if len(jbig_objs) > 0:
-                    jbigres = ResultSection(title_text="The following Object IDs are JBIG2DECODE streams:",
-                                            body_format=BODY_FORMAT.MEMORY_DUMP, parent=carres)
-                    jbigres.add_line(', '.join(map(str, jbig_objs)))
-                    show_content_of_interest = True
+                jbigres = ResultSection(title_text="The following Object IDs are JBIG2DECODE streams:",
+                                        body_format=BODY_FORMAT.MEMORY_DUMP, parent=carres)
+                jbigres.add_line(', '.join(map(str, jbig_objs)))
+                show_content_of_interest = True
 
             if len(carved_content) > 0:
                 for k, l in sorted(carved_content.items()):
@@ -449,7 +450,7 @@ class PDFId(ServiceBase):
 
                             con_bytes = con.encode()
                             if len(con) < 500:
-                                subres.body_format=BODY_FORMAT.MEMORY_DUMP
+                                subres.body_format = BODY_FORMAT.MEMORY_DUMP
                                 subres.add_line(con)
 
                                 # Check for IOC content
@@ -645,22 +646,22 @@ class PDFId(ServiceBase):
                                 # Remove any extra content before objects
                                 if not re.match(b"<<.*", stream):
                                     extra_content = re.match(br'[^<]*', stream).group(0)
-                                    stream = stream.replace(extra_content, b"%"+ extra_content + b"\x0A")
+                                    stream = stream.replace(extra_content, b"%" + extra_content + b"\x0A")
                                 obj_idx = 1
                                 # Find all labels and surround them with obj headers
-                                for lab in re.findall(rb"(<<[^\n]*>>(?:\x0A|\x0D)|<<[^\n]*>>$)", stream):
+                                for lab in re.findall(rb"(<<[^\n]*>>[\x0A\x0D]|<<[^\n]*>>$)", stream):
                                     stream = stream.replace(lab, str(obj_idx).encode() + b" 0 obj\r" +
                                                             b"".join(lab.rsplit(b'\n', 1)) + obj_footer)
                                     obj_idx += 1
                                 # Find all streams and surround them wirh stream headers
-                                for ste in re.findall(rb">>(?:(?!stream)(?!(?:\r|\n)endobj)[^<])+", stream):
+                                for ste in re.findall(rb">>(?:(?!stream)(?![\r\n]endobj)[^<])+", stream):
                                     # Might be multi-layer stream:
                                     if ste.endswith(b'>>'):
                                         continue
                                     stream = stream.replace(ste, b">>stream\n" + ste.replace(b'>>', b"", 1)
                                                             + b"\nendstream\rendobj\r")
                                 # Find all labels with attached stream, and surround them with obj headers
-                                for lab_ste in re.findall(b'(?:(?:(?!obj)...)|(?:endobj))((?:\r|\n)<<(?:(?!endobj).)+)',
+                                for lab_ste in re.findall(rb'(?:(?:(?!obj)...)|(?:endobj))([\r\n]<<(?:(?!endobj).)+)',
                                                           stream, re.DOTALL):
                                     stream = stream.replace(lab_ste, b"\r" + str(obj_idx).encode() +
                                                             b" 0 obj\r" + lab_ste[2:])
@@ -751,7 +752,7 @@ class PDFId(ServiceBase):
                             and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
 
                     res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
-                                                                            additional_keywords, get_malform=False)
+                                                                     additional_keywords, get_malform=False)
 
                     obj_cnt += 1
                     result.add_section(res)
