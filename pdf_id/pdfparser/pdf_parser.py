@@ -861,6 +861,8 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
         if not filtered:
             filtered = b''
         else:
+            if isinstance(filtered, list):
+                filtered = "".join(filtered)
             filtered = C2BIP3(filtered)
         if filtered.startswith(b'Unsupported filter: '):
             errors.add(filtered)
