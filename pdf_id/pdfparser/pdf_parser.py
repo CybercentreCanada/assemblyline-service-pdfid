@@ -115,6 +115,8 @@ def C2BIP3(string):
     if sys.version_info[0] > 2:
         if isinstance(string, bytes):
             return string
+        elif isinstance(string, list):
+            string = "".join(string)
         return bytes([ord(x) for x in string])
     else:
         return string
