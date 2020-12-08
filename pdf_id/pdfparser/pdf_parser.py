@@ -115,6 +115,8 @@ def C2BIP3(string):
     if sys.version_info[0] > 2:
         if isinstance(string, bytes):
             return string
+        elif isinstance(string, list):
+            string = "".join(string)
         return bytes([ord(x) for x in string])
     else:
         return string
@@ -861,8 +863,6 @@ def PrintOutputObject(object, filt, nocanonicalizedoutput, dump, show_stream=Fal
         if not filtered:
             filtered = b''
         else:
-            if isinstance(filtered, list):
-                filtered = "".join(filtered)
             filtered = C2BIP3(filtered)
         if filtered.startswith(b'Unsupported filter: '):
             errors.add(filtered)
