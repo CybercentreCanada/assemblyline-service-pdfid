@@ -8,6 +8,7 @@ import re
 import unicodedata
 
 from assemblyline.common.exceptions import NonRecoverableError
+from assemblyline.common.dict_utils import recursive_update
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
@@ -18,24 +19,51 @@ class PDFId(ServiceBase):
         super(PDFId, self).__init__(config)
 
     @staticmethod
-    def get_pdfid(path, additional_keywords, options, deep):
+    def get_pdfid(path, additional_keywords, plugins, deep):
         """Run PDFId code on sample.
 
         Args:
             path: Original PDF sample path.
             additional_keywords: List of additional keywords to be searched (provided in service configuration).
-            options: List of PDFId module plugins (provided in service configuration)..
+            plugins: List of PDFId module plugins (provided in service configuration)..
             deep: Boolean value of AL submission deep scan value.
 
         Returns:
             PDFId result and error list.
         """
+        options = {
+            'verbose': False,
+            'plugins': ','.join(plugins),
+            'scan': False,
+            'csv': False,
+            'all': True,
+            "extra": False,
+            "force": False,
+            "disarm": False,
+            "minimumscore": 0.0,
+            "select": '',
+            "nozero": False,
+            "output": '',
+            "pluginoptions": '',
+        }
         try:
-            pdfid_result, errors = pdfid.PDFiDMain(path, additional_keywords, options, deep)
+            pdfid_result, errors = pdfid.PDFiDMain(path, options, additional_keywords, deep)
         except Exception as e:
             raise Exception("PDFID failed to run on sample. Error: {}" .format(e))
 
-        return pdfid_result, errors
+        # Process pdfid_results for service results
+        pdfid_result_dict = {}
+        for line in pdfid_result:
+            parts = line.split(',')
+            value = parts[len(parts) - 1]
+            for index in reversed(range(len(parts) - 1)):
+                value = {
+                    parts[index]: value
+                }
+            if isinstance(value, dict):
+                pdfid_result_dict = recursive_update(pdfid_result_dict, value)
+
+        return pdfid_result_dict, errors
 
     def get_pdf_parser(self, path, working_dir, options):
         """Run PDF Parser code on sample.
@@ -48,8 +76,37 @@ class PDFId(ServiceBase):
         Returns:
             PDF Parser result and error list.
         """
+        op_cpy = options
+        options = {
+            'filter': '',
+            'search': '',
+            'reference': '',
+            'decoders': '',
+            'elements': 'cxtsi',
+            'type': '',
+            'raw': False,
+            'stats': False,
+            'objstm': False,
+            'verbose': False,
+            'extract': f"{working_dir}/malformed",
+            'hash': False,
+            'nocanonicalizedoutput': False,
+            'dump': f"{working_dir}/dump",
+            'debug': True,
+            'content': False,
+            'unfiltered': False,
+            'casesensitive': False,
+            'regex': False,
+            'overridingfilters': '',
+            'generateembedded': 0,
+            'generate': 0,
+            'yara': None,
+            'key': ''
+        }
+        options.update(op_cpy)
+
         try:
-            pdf_parser_statresult, errors = pdf_parser.PDFParserMain(path, working_dir, **options)
+            pdf_parser_statresult, errors = pdf_parser.PDFParserMain(path, working_dir, options)
         except Exception as e:
             pdf_parser_statresult = None
             errors = []
@@ -88,7 +145,7 @@ class PDFId(ServiceBase):
 
         # Run PDFId
         try:
-            pdfid_result, errors = self.get_pdfid(path, additional_keywords, heur, request.deep_scan)
+            pdfid_result, errors = self.get_pdfid([path], additional_keywords, heur, request.deep_scan)
         except Exception as e:
             raise NonRecoverableError(e)
         # Parse PDFId results
@@ -100,22 +157,22 @@ class PDFId(ServiceBase):
             if get_malform:
                 version = pdfid_result.get("PDFID", None)
                 if version:
-                    pdfidres.add_line(version[0])
+                    pdfidres.add_line(version)
                 properties = pdfid_result.get("Properties", None)
                 if properties:
                     pres = ResultSection(title_text="PDF Properties", parent=pdfidres)
-                    for plist in properties:
-                        pres.add_line("{0}: {1}" .format(plist[0], plist[1]))
-                        if plist[0] == "/ModDate":
-                            pres.add_tag('file.pdf.date.modified', plist[1])
-                        elif plist[0] == "/CreationDate":
-                            pres.add_tag('file.date.creation', plist[1])
-                        elif plist[0] == "/LastModified":
-                            pres.add_tag('file.date.last_modified', plist[1])
-                        elif plist[0] == "/SourceModified":
-                            pres.add_tag('file.pdf.date.source_modified', plist[1])
-                        elif plist[0] == "/pdfx":
-                            pres.add_tag('file.pdf.date.pdfx', plist[1])
+                    for k, v in properties.items():
+                        pres.add_line("{0}: {1}" .format(k, v))
+                        if k == "/ModDate":
+                            pres.add_tag('file.pdf.date.modified', v)
+                        elif k == "/CreationDate":
+                            pres.add_tag('file.date.creation', v)
+                        elif k == "/LastModified":
+                            pres.add_tag('file.date.last_modified', v)
+                        elif k == "/SourceModified":
+                            pres.add_tag('file.pdf.date.source_modified', v)
+                        elif k == "/pdfx":
+                            pres.add_tag('file.pdf.date.pdfx', v)
                 entropy = pdfid_result.get("Entropy", None)
                 if entropy:
                     enres = ResultSection(title_text="Entropy", parent=pdfidres)
@@ -124,16 +181,17 @@ class PDFId(ServiceBase):
             flags = pdfid_result.get("Flags", None)
             if flags:
                 fres = ResultSection(title_text="PDF Keyword Flags", parent=pdfidres)
-                for flist in flags:
-                    if flist[0] == "/ObjStm":
+                for k, v in flags.items():
+                    if k == "/ObjStm":
                         objstms = True
-                    if len(flist) == 3:
-                        fres.add_line("{0}:Count: {1}, Hex-Encoded Count: {2}" .format(flist[0], flist[1], flist[2]))
+                    if isinstance(v, dict) == 2:
+                        for vk, vv in v.items():
+                            fres.add_line("{0}: {1} ({2})" .format(k, vk, vv))
                     else:
-                        fres.add_line("{0}:Count: {1}".format(flist[0], flist[1]))
-                    fres.add_tag('file.string.extracted', flist[0].replace("/", "", 1))
-                    if flist[0] in additional_keywords:
-                        triage_keywords.add(flist[0].replace("/", "", 1))
+                        fres.add_line("{0}: {1}".format(k, v))
+                    fres.add_tag('file.string.extracted', k.replace("/", "", 1))
+                    if k in additional_keywords:
+                        triage_keywords.add(k.replace("/", "", 1))
 
             plugin = pdfid_result.get("Plugin", [])
 
