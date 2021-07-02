@@ -864,7 +864,8 @@ class cPDFParseDictionary:
             print('%s>>' % prefix)
 
     def PrettyPrint(self, prefix):
-        self.PrettyPrintSub(prefix, self.parsed)
+        None
+        # self.PrettyPrintSub(prefix, self.parsed)
 
     def Get(self, select):
         for key, value in self.parsed:
@@ -986,7 +987,7 @@ def PrintOutputObject(object, options):
             fDump.close()
         except:
             errors.add('Error writing file %s' % options.dump)
-    print('')
+
     return '\n'.join(res), errors
 
 
@@ -1471,7 +1472,7 @@ def Main():
 
     if len(args) != 1:
         oParser.print_help()
-        print('')
+
         print('  %s' % __description__)
         print('  Source code put in the public domain by Didier Stevens, no Copyright')
         print('  Use at your own risk')
@@ -1654,7 +1655,7 @@ def PDFParserMain(file, working_dir, options):
                             else:
                                 results['parts'].append('trailer')
                                 oPDFParseDictionary.PrettyPrint('  ')
-                            print('')
+
                         elif options.key:
                             if oPDFParseDictionary.parsed != None:
                                 result = oPDFParseDictionary.GetNested(options.key)
@@ -1668,7 +1669,7 @@ def PDFParserMain(file, working_dir, options):
                 elif object.type == PDF_ELEMENT_STARTXREF and selectStartXref:
                     if not options.generate and options.yara == None and options.generateembedded == 0:
                         results['parts'].append('startxref %d' % object.index)
-                        print('')
+
                 elif object.type == PDF_ELEMENT_INDIRECT_OBJECT and selectIndirectObject:
                     if options.search:
                         if object.Contains(options.search):
@@ -1731,7 +1732,7 @@ def PDFParserMain(file, working_dir, options):
                         rawContent = FormatOutput(object.content, True)
                         results['parts'].append(' len: %d md5: %s' % (
                             len(rawContent), hashlib.md5(rawContent).hexdigest()))
-                        print('')
+
                     elif options.searchstream:
                         if object.StreamContains(
                                 options.searchstream, not options.unfiltered, options.casesensitive, options.regex,
@@ -1785,7 +1786,7 @@ def PDFParserMain(file, working_dir, options):
                 (key, len(dicObjectTypes[key]),
                     ', '.join(map(lambda x: '%d' % x, dicObjectTypes[key]))))
         if sum(map(len, dKeywords.values())) > 0:
-            print('Search keywords:')
+            # print('Search keywords:')
             for keyword in keywords:
                 if len(dKeywords[keyword]) > 0:
                     results['stats'].append(

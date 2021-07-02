@@ -101,7 +101,8 @@ class PDFId(ServiceBase):
             'generateembedded': 0,
             'generate': 0,
             'yara': None,
-            'key': ''
+            'key': '',
+            'object': ''
         }
         options.update(op_cpy)
 
@@ -184,14 +185,10 @@ class PDFId(ServiceBase):
                 for k, v in flags.items():
                     if k == "/ObjStm":
                         objstms = True
-                    if isinstance(v, dict) == 2:
-                        for vk, vv in v.items():
-                            fres.add_line("{0}: {1} ({2})" .format(k, vk, vv))
-                    else:
                         # Filter out seemingly meaningless keywords
-                        if int(v) > 1 and len(k) > 2:
-                            fres.add_line("{0}: {1}".format(k, v))
-                            fres.add_tag('file.string.extracted', k.replace("/", "", 1))
+                    if ((not isinstance(v, dict) and int(v) > 1) or (isinstance(v, dict))) and len(k) > 2:
+                        fres.add_line("{0}: {1}".format(k, v))
+                        fres.add_tag('file.string.extracted', k.replace("/", "", 1))
                     if k in additional_keywords:
                         triage_keywords.add(k.replace("/", "", 1))
 
