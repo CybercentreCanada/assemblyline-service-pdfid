@@ -774,7 +774,7 @@ class cPDFiD():
 
 
 def Print(lines, options):
-    print(lines)
+    # print(lines)
     filename = None
     if options.scan:
         filename = 'PDFiD.log'

@@ -13,6 +13,9 @@ import binascii
 import zlib
 import optparse
 import re
+
+from copy import deepcopy
+
 __description__ = 'pdf-parser, use it to parse a PDF document'
 __author__ = 'Didier Stevens'
 __version__ = '0.7.4'
@@ -924,48 +927,51 @@ def PrintOutputObject(object, options):
         StdoutWriteChunked(filtered)
         return
 
-    print('obj %d %d' % (object.id, object.version))
+    errors = set()
+    res = []
+
+    res.append('obj %d %d' % (object.id, object.version))
     if object.objstm != None:
-        print(' Containing /ObjStm: %d %d' % object.objstm)
-    print(' Type: %s' % ConditionalCanonicalize(object.GetType(), options.nocanonicalizedoutput))
-    print(' Referencing: %s' % ', '.join(map(lambda x: '%s %s %s' % x, object.GetReferences())))
+        res.append(' Containing /ObjStm: %d %d' % object.objstm)
+    res.append(' Type: %s' % ConditionalCanonicalize(object.GetType(), options.nocanonicalizedoutput))
+    res.append(' Referencing: %s' % ', '.join(map(lambda x: '%s %s %s' % x, object.GetReferences())))
     dataPrecedingStream = object.ContainsStream()
     oPDFParseDictionary = None
     if dataPrecedingStream:
-        print(' Contains stream')
+        res.append(' Contains stream')
         if options.debug:
-            print(' %s' % FormatOutput(dataPrecedingStream, options.raw))
+            res.append(' %s' % FormatOutput(dataPrecedingStream, options.raw))
         oPDFParseDictionary = cPDFParseDictionary(dataPrecedingStream, options.nocanonicalizedoutput)
         if options.hash:
             streamContent = object.Stream(False, options.overridingfilters)
-            print('  unfiltered')
-            print('   len: %6d md5: %s' % (len(streamContent), hashlib.md5(streamContent).hexdigest()))
-            print('   %s' % HexAsciiDumpLine(streamContent))
+            res.append('  unfiltered')
+            res.append('   len: %6d md5: %s' % (len(streamContent), hashlib.md5(streamContent).hexdigest()))
+            res.append('   %s' % HexAsciiDumpLine(streamContent))
             streamContent = object.Stream(True, options.overridingfilters)
-            print('  filtered')
-            print('   len: %6d md5: %s' % (len(streamContent), hashlib.md5(streamContent).hexdigest()))
-            print('   %s' % HexAsciiDumpLine(streamContent))
+            res.append('  filtered')
+            res.append('   len: %6d md5: %s' % (len(streamContent), hashlib.md5(streamContent).hexdigest()))
+            res.append('   %s' % HexAsciiDumpLine(streamContent))
             streamContent = None
     else:
         if options.debug or options.raw:
-            print(' %s' % FormatOutput(object.content, options.raw))
+            res.append(' %s' % FormatOutput(object.content, options.raw))
         oPDFParseDictionary = cPDFParseDictionary(object.content, options.nocanonicalizedoutput)
-    print('')
+    res.append('')
     oPDFParseDictionary.PrettyPrint('  ')
-    print('')
+    res.append('')
     if options.filter and not options.dump:
         filtered = object.Stream(overridingfilters=options.overridingfilters)
         if filtered == []:
-            print(' %s' % FormatOutput(object.content, options.raw))
+            res.append(' %s' % FormatOutput(object.content, options.raw))
         else:
-            print(' %s' % FormatOutput(filtered, options.raw))
+            res.append(' %s' % FormatOutput(filtered, options.raw))
     if options.content:
         if object.ContainsStream():
             stream = object.Stream(False, options.overridingfilters)
             if stream != []:
-                print(' %s' % FormatOutput(stream, options.raw))
+                res.append(' %s' % FormatOutput(stream, options.raw))
         else:
-            print(''.join([token[1] for token in object.content]))
+            res.append(''.join([token[1] for token in object.content]))
 
     if options.dump:
         filtered = object.Stream(options.filter == True, options.overridingfilters)
@@ -976,12 +982,12 @@ def PrintOutputObject(object, options):
             try:
                 fDump.write(C2BIP3(filtered))
             except:
-                print('Error writing file %s' % options.dump)
+                errors.add('Error writing file %s' % options.dump)
             fDump.close()
         except:
-            print('Error writing file %s' % options.dump)
+            errors.add('Error writing file %s' % options.dump)
     print('')
-    return
+    return '\n'.join(res), errors
 
 
 def Canonicalize(sIn):
@@ -1217,7 +1223,7 @@ def PrintObject(object, options):
     if options.generate:
         PrintGenerateObject(object, options)
     else:
-        PrintOutputObject(object, options)
+        return PrintOutputObject(object, options)
 
 
 def File2Strings(filename):
@@ -1504,6 +1510,7 @@ def PDFParserMain(file, working_dir, options):
     dicObjectTypes = {}
     keywords = ['/JS', '/JavaScript', '/AA', '/OpenAction', '/AcroForm',
                 '/RichMedia', '/Launch', '/EmbeddedFile', '/XFA', '/URI']
+    obj_extracted = set()
     for extrakeyword in ParseINIFile():
         if not extrakeyword in keywords:
             keywords.append(extrakeyword)
@@ -1665,7 +1672,16 @@ def PDFParserMain(file, working_dir, options):
                 elif object.type == PDF_ELEMENT_INDIRECT_OBJECT and selectIndirectObject:
                     if options.search:
                         if object.Contains(options.search):
-                            PrintObject(object, options)
+                            res, err = PrintObject(object, options)
+                            if options.search in res:
+                                results['parts'].append(res)
+                            else:
+                                # Try again, this time getting the raw output
+                                options_copy = deepcopy(options)
+                                options_copy.raw = True
+                                res, err = PrintObject(object, options_copy)
+                                if options.search in res:
+                                    results['parts'].append(res)
                     elif options.key:
                         contentDictionary = object.ContainsStream()
                         if not contentDictionary:
@@ -1676,14 +1692,40 @@ def PDFParserMain(file, working_dir, options):
                             if result != None:
                                 results['parts'].append(result)
                     elif options.object:
-                        if MatchObjectID(object.id, options.object):
-                            PrintObject(object, options)
+                        if isinstance(object, set):
+                            if MatchObjectID(object.id, options.object):
+                                res, err = PrintObject(object, options)
+                                # Ensure the object contains a stream
+                                if "Contains stream" in res and "Object extracted." in res:
+                                    results['files']['embedded'].append(f"{options.dump}{str(object.id)}")
+                                if len(err) > 0:
+                                    for e in err:
+                                        errors.add("Object extraction error: {}".format(e))
+                                obj_extracted.add(str(object.id))
+                                if object == obj_extracted:
+                                    break
+                        elif object.id == eval(object):
+                            res, err = PrintObject(object, options)
+                            results['parts'].append(res)
+                            # if get_object_detail:
+                            #     obj_det = re.match(r'[\r]?\n<<.+>>[\r]?\n', FormatOutput(object.content, raw=True),
+                            #                        re.DOTALL)
+                            #     if obj_det:
+                            #         results['obj_details'] = obj_det.group(0)
+                            if options.dump and "Object extracted." in res:
+                                results['files']['embedded'].append(options.dump)
+                            if len(err) > 0:
+                                for e in err:
+                                    errors.add("Object extraction error: {}" .format(e))
+                            break
                     elif options.reference:
                         if object.References(options.reference):
-                            PrintObject(object, options)
+                            res, _ = PrintObject(object, options)
+                            results['parts'].append(res)
                     elif options.type:
                         if EqualCanonical(object.GetType(), optionsType):
-                            PrintObject(object, options)
+                            res, _ = PrintObject(object, options)
+                            results['parts'].append(res)
                     elif options.hash:
                         results['parts'].append('obj %d %d' % (object.id, object.version))
                         rawContent = FormatOutput(object.content, True)
@@ -1715,7 +1757,8 @@ def PDFParserMain(file, working_dir, options):
                         if object.id == options.generateembedded:
                             PrintGenerateObject(object, options, 8)
                     else:
-                        PrintObject(object, options)
+                        res, _ = PrintObject(object, options)
+                        results['parts'].append(res)
                 elif object.type == PDF_ELEMENT_MALFORMED:
                     try:
                         fExtract = open(options.extract, 'wb')

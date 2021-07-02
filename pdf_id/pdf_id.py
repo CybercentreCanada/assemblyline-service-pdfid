@@ -180,7 +180,7 @@ class PDFId(ServiceBase):
                         enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
             flags = pdfid_result.get("Flags", None)
             if flags:
-                fres = ResultSection(title_text="PDF Keyword Flags", parent=pdfidres)
+                fres = ResultSection(title_text="PDF Keyword Flags (Count)", parent=pdfidres)
                 for k, v in flags.items():
                     if k == "/ObjStm":
                         objstms = True
@@ -188,8 +188,10 @@ class PDFId(ServiceBase):
                         for vk, vv in v.items():
                             fres.add_line("{0}: {1} ({2})" .format(k, vk, vv))
                     else:
-                        fres.add_line("{0}: {1}".format(k, v))
-                    fres.add_tag('file.string.extracted', k.replace("/", "", 1))
+                        # Filter out seemingly meaningless keywords
+                        if int(v) > 1 and len(k) > 2:
+                            fres.add_line("{0}: {1}".format(k, v))
+                            fres.add_tag('file.string.extracted', k.replace("/", "", 1))
                     if k in additional_keywords:
                         triage_keywords.add(k.replace("/", "", 1))
 
