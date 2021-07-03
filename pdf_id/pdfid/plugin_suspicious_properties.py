@@ -6,32 +6,32 @@ Modified by CSE to fit ASSEMBLYLINE service
 class cPDFiDSuspiciousProperties(cPluginParent):
     name = 'Suspicious Properties plugin'
 
-    def __init__(self, oPDFiD):
+    def __init__(self, oPDFiD, options):
         self.oPDFiD = oPDFiD
         self.hits = set()
 
     def Score(self):
         # Entropy. Typically data outside of streams contain dictionaries & pdf entities (mostly all ASCII text).
-        if self.oPDFiD.non_stream_entropy > 6:
-            self.hits.add("entropy")
+        #if self.oPDFiD.non_stream_entropy > 6:
+        #    self.hits.add("entropy")
         # Pages. Many malicious PDFs will contain only one page.
         if '/Page' in self.oPDFiD.keywords and self.oPDFiD.keywords['/Page'].count == 1:
             self.hits.add("page")
         # Characters after last %%EOF.
-        if self.oPDFiD.last_eof_bytes > 100:
-            if self.oPDFiD.last_eof_bytes > 499:
-                self.hits.add("eof5")
-            else:
-                self.hits.add("eof1")
+        #if self.oPDFiD.last_eof_bytes > 100:
+        #    if self.oPDFiD.last_eof_bytes > 499:
+        #        self.hits.add("eof5")
+        #    else:
+        #        self.hits.add("eof1")
         if self.oPDFiD.keywords['obj'].count != self.oPDFiD.keywords['endobj'].count:
             self.hits.add("obj/endobj")
         if self.oPDFiD.keywords['stream'].count != self.oPDFiD.keywords['endstream'].count:
             self.hits.add("stream/endstream")
 
-        return 0, self.hits
+        return 0.0, self.hits
 
-    def Instructions(self, score, hits):
-
+    def Instructions(self, score_tuple):
+        score, hits = score_tuple
         instruct = {
             'entropy': 'Outside stream entropy of > 5.\n',
             'eof1': 'Over 100 characters after last %%EOF.\n',

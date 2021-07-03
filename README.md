@@ -1,14 +1,14 @@
 # PDFId Service
 
-This Assemblyline service extracts metadata and objects from PDF files using Didier Stevens PDFId (Version 2.4) and PDFParser (Version 6.8) tools.
+This Assemblyline service extracts metadata and objects from PDF files using Didier Stevens PDFId (Version 2.7) and PDFParser (Version 7.4) tools.
 
 **NOTE**: This service does not require you to buy any licence and is preinstalled and working after a default installation
 
 ## Configuration
 
-- ADDITIONAL_KEYS: List of keywords searched for by PDFid  
+- ADDITIONAL_KEYS: List of keywords searched for by PDFid
 - HEURISTICS: Choose the heuristics plugin to be run during the service execution. Here's the list of plugin to choose from:
-    - pdf_id/pdfid/plugin_embeddedfile 
+    - pdf_id/pdfid/plugin_embeddedfile
     - pdf_id/pdfid/plugin_nameobfuscation
     - pdf_id/pdfid/plugin_suspicious_properties
     - pdf_id/pdfid/plugin_triage
@@ -113,6 +113,3 @@ PDFId plugins are python scripts used by PDFId service to score suspicious prope
                 return
 
 See source code under "pdfid" folder for examples of plugins already used by this service.
-
-
-
