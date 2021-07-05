@@ -666,7 +666,7 @@ class cPDFElementIndirectObject:
                     message = 'FlateDecode decompress failed'
                     if len(data) > 0 and ord(data[0]) & 0x0F != 8:
                         message += ', unexpected compression method: %02x' % ord(data[0])
-                    return message + '. zlib.error %s' % e.message
+                    return message + '. zlib.error: %s' % str(e)
             elif EqualCanonical(filter, '/ASCIIHexDecode') or EqualCanonical(filter, '/AHx'):
                 try:
                     data = ASCIIHexDecode(data)
@@ -755,7 +755,8 @@ class cPDFParseDictionary:
         if dataTrimmed == []:
             self.parsed = None
         elif self.isOpenDictionary(dataTrimmed[0]) and (self.isCloseDictionary(dataTrimmed[-1]) or self.couldBeCloseDictionary(dataTrimmed[-1])):
-            self.parsed = self.ParseDictionary(dataTrimmed)[0]
+            parse_dict = self.ParseDictionary(dataTrimmed)
+            self.parsed = parse_dict[0] if parse_dict else None
         else:
             self.parsed = None
 
