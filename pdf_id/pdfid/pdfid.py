@@ -841,7 +841,7 @@ def ProcessFile(filename, options, plugins, additional_keywords):
                     Print('Error instantiating plugin: %s' % cPlugin.name, options)
                     if options.verbose:
                         raise e
-                    return
+                    continue
 
                 try:
                     score = oPlugin.Score()
@@ -849,7 +849,7 @@ def ProcessFile(filename, options, plugins, additional_keywords):
                     Print('Error running plugin: %s' % cPlugin.name, options)
                     if options.verbose:
                         raise e
-                    return
+                    continue
                 actual_score = score
                 if isinstance(score, tuple):
                     actual_score = score[0]
