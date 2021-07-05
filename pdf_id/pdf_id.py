@@ -690,8 +690,9 @@ class PDFId(ServiceBase):
 
         if pdf_parser_subresult:
             for sub_p in pdf_parser_subresult['parts']:
-                if sub_p.split("\n", 4)[3] == "Contains stream":
+                if len(sub_p.split("\n", 4)) > 4 and sub_p.split("\n", 4)[3] == "Contains stream":
                     stream_present = True
+                    break
             if stream_present:
                 files = pdf_parser_subresult.get("files", None)
                 if files:
