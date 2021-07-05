@@ -666,7 +666,7 @@ class cPDFElementIndirectObject:
                     message = 'FlateDecode decompress failed'
                     if len(data) > 0 and ord(data[0]) & 0x0F != 8:
                         message += ', unexpected compression method: %02x' % ord(data[0])
-                    return message + '. zlib.error %s' % e.message
+                    return message + '. zlib.error: %s' % str(e)
             elif EqualCanonical(filter, '/ASCIIHexDecode') or EqualCanonical(filter, '/AHx'):
                 try:
                     data = ASCIIHexDecode(data)
@@ -755,7 +755,8 @@ class cPDFParseDictionary:
         if dataTrimmed == []:
             self.parsed = None
         elif self.isOpenDictionary(dataTrimmed[0]) and (self.isCloseDictionary(dataTrimmed[-1]) or self.couldBeCloseDictionary(dataTrimmed[-1])):
-            self.parsed = self.ParseDictionary(dataTrimmed)[0]
+            parse_dict = self.ParseDictionary(dataTrimmed)
+            self.parsed = parse_dict[0] if parse_dict else None
         else:
             self.parsed = None
 
@@ -1693,32 +1694,17 @@ def PDFParserMain(file, working_dir, options):
                             if result != None:
                                 results['parts'].append(result)
                     elif options.object:
-                        if isinstance(object, set):
-                            if MatchObjectID(object.id, options.object):
-                                res, err = PrintObject(object, options)
-                                # Ensure the object contains a stream
-                                if "Contains stream" in res and "Object extracted." in res:
-                                    results['files']['embedded'].append(f"{options.dump}{str(object.id)}")
-                                if len(err) > 0:
-                                    for e in err:
-                                        errors.add("Object extraction error: {}".format(e))
-                                obj_extracted.add(str(object.id))
-                                if object == obj_extracted:
-                                    break
-                        elif object.id == eval(object):
+                        if MatchObjectID(object.id, options.object):
                             res, err = PrintObject(object, options)
-                            results['parts'].append(res)
-                            # if get_object_detail:
-                            #     obj_det = re.match(r'[\r]?\n<<.+>>[\r]?\n', FormatOutput(object.content, raw=True),
-                            #                        re.DOTALL)
-                            #     if obj_det:
-                            #         results['obj_details'] = obj_det.group(0)
-                            if options.dump and "Object extracted." in res:
-                                results['files']['embedded'].append(options.dump)
+                            # Ensure the object contains a stream
+                            if "Contains stream" in res and "Object extracted." in res:
+                                results['files']['embedded'].append(f"{options.dump}{str(object.id)}")
                             if len(err) > 0:
                                 for e in err:
-                                    errors.add("Object extraction error: {}" .format(e))
-                            break
+                                    errors.add("Object extraction error: {}".format(e))
+                            obj_extracted.add(str(object.id))
+                            if object == obj_extracted:
+                                break
                     elif options.reference:
                         if object.References(options.reference):
                             res, _ = PrintObject(object, options)
