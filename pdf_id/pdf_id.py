@@ -12,6 +12,7 @@ from assemblyline.common.dict_utils import recursive_update
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.request import MaxExtractedExceeded
 
 
 class PDFId(ServiceBase):
@@ -536,8 +537,11 @@ class PDFId(ServiceBase):
                                     crvf = os.path.join(self.working_directory, f_name)
                                     with open(crvf, 'wb') as f:
                                         f.write(con_bytes)
-                                    request.add_extracted(crvf, os.path.basename(crvf),
-                                                          "Extracted content from object {}" .format(k))
+                                    try:
+                                        request.add_extracted(crvf, os.path.basename(crvf),
+                                                              "Extracted content from object {}" .format(k))
+                                    except MaxExtractedExceeded:
+                                        pass
                                     carved_extracted_shas.add(crv_sha)
 
             if show_content_of_interest:
@@ -580,8 +584,11 @@ class PDFId(ServiceBase):
                                     if len(l) > 0:
                                         pdf_parserres.set_heuristic(6)
                                     for i in l:
-                                        request.add_extracted(i, os.path.basename(i),
-                                                              "Extracted malformed content in PDF Parser Analysis.")
+                                        try:
+                                            request.add_extracted(i, os.path.basename(i),
+                                                                  "Extracted malformed content in PDF Parser Analysis.")
+                                        except MaxExtractedExceeded:
+                                            break
 
                         parts = pdf_parser_result.get("parts", None)
                         # Extract service will extract the sample's embedded files.
@@ -613,9 +620,12 @@ class PDFId(ServiceBase):
                                         f_name = os.path.basename(i)
                                         obj_id = f_name.replace("extracted_obj_", "")
                                         extracted_files.append("Extracted object {} as {}".format(obj_id, f_name))
-                                        request.add_extracted(i, f_name,
-                                                              "Object {} extracted in PDF Parser Analysis."
-                                                              .format(obj_id))
+                                        try:
+                                            request.add_extracted(i, f_name,
+                                                                  "Object {} extracted in PDF Parser Analysis."
+                                                                  .format(obj_id))
+                                        except MaxExtractedExceeded:
+                                            break
                         for e in errors:
                             all_errors.add(e)
 
@@ -644,9 +654,12 @@ class PDFId(ServiceBase):
                                         obj_id = f_name.replace("extracted_jb_obj_", "")
                                         extracted_jb.append("JBIG2DECODE object {} extracted as {}".format(obj_id,
                                                                                                            f_name))
-                                        request.add_extracted(i, f_name,
-                                                              "JBIG2DECODE object {} extracted in PDF Parser Analysis."
-                                                              .format(obj_id))
+                                        try:
+                                            request.add_extracted(i, f_name,
+                                                                  "JBIG2DECODE object {} extracted in PDF Parser Analysis."
+                                                                  .format(obj_id))
+                                        except MaxExtractedExceeded:
+                                            break
 
                         for e in errors:
                             all_errors.add(e)
