@@ -55,14 +55,18 @@ class PDFId(ServiceBase):
         # Process pdfid_results for service results
         pdfid_result_dict = {}
         for line in pdfid_result:
-            parts = line.split(',')
-            value = parts[len(parts) - 1]
-            for index in reversed(range(len(parts) - 1)):
-                value = {
-                    parts[index]: value
-                }
-            if isinstance(value, dict):
-                pdfid_result_dict = recursive_update(pdfid_result_dict, value)
+            if line:
+                parts = line.split(',')
+                value = parts[len(parts) - 1]
+                for index in reversed(range(len(parts) - 1)):
+                    value = {
+                        parts[index]: value
+                    }
+                if isinstance(value, dict):
+                    try:
+                        pdfid_result_dict = recursive_update(pdfid_result_dict, value)
+                    except:
+                        pass
 
         return pdfid_result_dict, errors
 
@@ -181,7 +185,7 @@ class PDFId(ServiceBase):
                     for enlist in entropy:
                         enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
             flags = pdfid_result.get("Flags", None)
-            if flags:
+            if isinstance(flags, dict):
                 fres = ResultSection(title_text="PDF Keyword Flags (Count)", parent=pdfidres)
                 for k, v in flags.items():
                     if k == "/ObjStm":
