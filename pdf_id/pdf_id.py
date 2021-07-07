@@ -542,7 +542,7 @@ class PDFId(ServiceBase):
                                     with open(crvf, 'wb') as f:
                                         f.write(con_bytes)
                                     try:
-                                        if k in ['URI']:
+                                        if keyw in ['URI']:
                                             # Add as supplementary
                                             request.add_supplementary(crvf, os.path.basename(crvf),
                                                                       "Supplementary content from object {}" .format(k))
