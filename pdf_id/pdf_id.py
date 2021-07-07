@@ -530,18 +530,21 @@ class PDFId(ServiceBase):
                                                 subres.add_tag(ty, v)
                             else:
                                 crv_sha = hashlib.sha256(con_bytes).hexdigest()
+                                is_supplementary = keyw in ['URI']
+                                extraction_purpose = "as supplementary file" if is_supplementary else "for analysis"
 
                                 if crv_sha not in carved_extracted_shas:
                                     f_name = f"carved_content_obj_{k}_{crv_sha[0:7]}"
-                                    subres.add_lines(["Content over 500 bytes it will be extracted for analysis",
-                                                      f"Name: {f_name} - SHA256: {crv_sha}"])
+                                    subres.add_lines(
+                                        [f"Content over 500 bytes it will be extracted {extraction_purpose}",
+                                         f"Name: {f_name} - SHA256: {crv_sha}"])
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
                                     crvf = os.path.join(self.working_directory, f_name)
                                     with open(crvf, 'wb') as f:
                                         f.write(con_bytes)
                                     try:
-                                        if keyw in ['URI']:
+                                        if is_supplementary:
                                             # Add as supplementary
                                             request.add_supplementary(crvf, os.path.basename(crvf),
                                                                       f"Supplementary content from object {k}")
