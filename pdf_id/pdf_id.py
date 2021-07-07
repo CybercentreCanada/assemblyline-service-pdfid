@@ -542,8 +542,13 @@ class PDFId(ServiceBase):
                                     with open(crvf, 'wb') as f:
                                         f.write(con_bytes)
                                     try:
-                                        request.add_extracted(crvf, os.path.basename(crvf),
-                                                              "Extracted content from object {}" .format(k))
+                                        if k in ['URI']:
+                                            # Add as supplementary
+                                            request.add_supplementary(crvf, os.path.basename(crvf),
+                                                                      "Supplementary content from object {}" .format(k))
+                                        else:
+                                            request.add_extracted(crvf, os.path.basename(crvf),
+                                                                  "Extracted content from object {}" .format(k))
                                     except MaxExtractedExceeded:
                                         pass
                                     carved_extracted_shas.add(crv_sha)
