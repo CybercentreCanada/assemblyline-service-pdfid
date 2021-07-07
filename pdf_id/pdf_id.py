@@ -50,7 +50,7 @@ class PDFId(ServiceBase):
         try:
             pdfid_result, errors = pdfid.PDFiDMain(path, options, additional_keywords, deep)
         except Exception as e:
-            raise Exception("PDFID failed to run on sample. Error: {}" .format(e))
+            raise Exception(f"PDFID failed to run on sample. Error: {e}")
 
         # Process pdfid_results for service results
         pdfid_result_dict = {}
@@ -116,7 +116,7 @@ class PDFId(ServiceBase):
         except Exception as e:
             pdf_parser_statresult = None
             errors = []
-            self.log.error("pdf_parser failed to run on sample. Error: {}" .format(e))
+            self.log.error(f"pdf_parser failed to run on sample. Error: {e}")
 
         return pdf_parser_statresult, errors
 
@@ -168,7 +168,7 @@ class PDFId(ServiceBase):
                 if properties:
                     pres = ResultSection(title_text="PDF Properties", parent=pdfidres)
                     for k, v in properties.items():
-                        pres.add_line("{0}: {1}" .format(k, v))
+                        pres.add_line(f"{k}: {v}")
                         if k == "/ModDate":
                             pres.add_tag('file.pdf.date.modified', v)
                         elif k == "/CreationDate":
@@ -183,7 +183,7 @@ class PDFId(ServiceBase):
                 if entropy:
                     enres = ResultSection(title_text="Entropy", parent=pdfidres)
                     for enlist in entropy:
-                        enres.add_line("{0}: {1}, ({2})" .format(enlist[0], enlist[1], enlist[2]))
+                        enres.add_line(f"{enlist[0]}: {enlist[1]}, ({enlist[2]})")
             flags = pdfid_result.get("Flags", None)
             if isinstance(flags, dict):
                 fres = ResultSection(title_text="PDF Keyword Flags (Count)", parent=pdfidres)
@@ -192,7 +192,7 @@ class PDFId(ServiceBase):
                         objstms = True
                         # Filter out seemingly meaningless keywords
                     if ((not isinstance(v, dict) and int(v) > 1) or (isinstance(v, dict))) and len(k) > 2:
-                        fres.add_line("{0}: {1}".format(k, v))
+                        fres.add_line(f"{k}: {v}")
                         fres.add_tag('file.string.extracted', k.replace("/", "", 1))
                     if k in additional_keywords:
                         triage_keywords.add(k.replace("/", "", 1))
@@ -349,7 +349,7 @@ class PDFId(ServiceBase):
                         if p.startswith("trailer:"):
                             # Grab the content after the keyword
                             # Check that keyword actually in content
-                            if "/{}" .format(keyword) in p:
+                            if f"/{keyword}" in p:
                                 try:
                                     content = p.split(keyword, 1)[1].replace('>>++>>', '').split("/", 1)[0].strip()
                                     references = re.findall("[0-9]* [0-9]* R", content)
@@ -372,9 +372,9 @@ class PDFId(ServiceBase):
                                 except Exception:
                                     content = p
                             # Sometimes the content is the same keyword with references (i.e "/URI /URI 10 0 R"
-                            if content.startswith("/{}" .format(keyword)):
+                            if content.startswith(f"/{keyword}"):
                                 try:
-                                    content = re.sub("/{}[ ]*" .format(keyword), "", content, 1)
+                                    content = re.sub(f"/{keyword}[ ]*", "", content, 1)
                                 except Exception:
                                     pass
                             try:
@@ -506,8 +506,7 @@ class PDFId(ServiceBase):
                 for k, l in sorted(carved_content.items()):
                     for d in l:
                         for keyw, con in d.items():
-                            subres = ResultSection(title_text="Object {0}: Hits for Keyword '{1}':"
-                                                   .format(k, keyw))
+                            subres = ResultSection(title_text=f"Object {k}: Hits for Keyword '{keyw}':")
                             subres.set_heuristic(8)
 
                             con_bytes = con.encode()
@@ -531,19 +530,27 @@ class PDFId(ServiceBase):
                                                 subres.add_tag(ty, v)
                             else:
                                 crv_sha = hashlib.sha256(con_bytes).hexdigest()
+                                is_supplementary = keyw in ['URI']
+                                extraction_purpose = "as supplementary file" if is_supplementary else "for analysis"
 
                                 if crv_sha not in carved_extracted_shas:
-                                    f_name = "carved_content_obj_{}_{}".format(k, crv_sha[0:7])
-                                    subres.add_lines(["Content over 500 bytes it will be extracted for analysis",
-                                                      "Name: {} - SHA256: {}".format(f_name, crv_sha)])
+                                    f_name = f"carved_content_obj_{k}_{crv_sha[0:7]}"
+                                    subres.add_lines(
+                                        [f"Content over 500 bytes it will be extracted {extraction_purpose}",
+                                         f"Name: {f_name} - SHA256: {crv_sha}"])
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
                                     crvf = os.path.join(self.working_directory, f_name)
                                     with open(crvf, 'wb') as f:
                                         f.write(con_bytes)
                                     try:
-                                        request.add_extracted(crvf, os.path.basename(crvf),
-                                                              "Extracted content from object {}" .format(k))
+                                        if is_supplementary:
+                                            # Add as supplementary
+                                            request.add_supplementary(crvf, os.path.basename(crvf),
+                                                                      f"Supplementary content from object {k}")
+                                        else:
+                                            request.add_extracted(crvf, os.path.basename(crvf),
+                                                                  f"Extracted content from object {k}")
                                     except MaxExtractedExceeded:
                                         pass
                                     carved_extracted_shas.add(crv_sha)
@@ -623,11 +630,10 @@ class PDFId(ServiceBase):
                                     for i in l:
                                         f_name = os.path.basename(i)
                                         obj_id = f_name.replace("extracted_obj_", "")
-                                        extracted_files.append("Extracted object {} as {}".format(obj_id, f_name))
+                                        extracted_files.append(f"Extracted object {obj_id} as {f_name}")
                                         try:
                                             request.add_extracted(i, f_name,
-                                                                  "Object {} extracted in PDF Parser Analysis."
-                                                                  .format(obj_id))
+                                                                  f"Object {obj_id} extracted in PDF Parser Analysis.")
                                         except MaxExtractedExceeded:
                                             break
                         for e in errors:
@@ -656,12 +662,11 @@ class PDFId(ServiceBase):
                                     for i in l:
                                         f_name = os.path.basename(i)
                                         obj_id = f_name.replace("extracted_jb_obj_", "")
-                                        extracted_jb.append("JBIG2DECODE object {} extracted as {}".format(obj_id,
-                                                                                                           f_name))
+                                        extracted_jb.append(f"JBIG2DECODE object {obj_id} extracted as {f_name}")
                                         try:
-                                            request.add_extracted(i, f_name,
-                                                                  "JBIG2DECODE object {} extracted in PDF Parser Analysis."
-                                                                  .format(obj_id))
+                                            request.add_extracted(
+                                                i, f_name,
+                                                f"JBIG2DECODE object {obj_id} extracted in PDF Parser Analysis.")
                                         except MaxExtractedExceeded:
                                             break
 
@@ -785,7 +790,7 @@ class PDFId(ServiceBase):
                     getobj = p.split("\n", 1)[0].split(" ")[1]
                     if getobj in objstm_extracted:
                         continue
-                    dump_file = os.path.join(self.working_directory, "objstm_{0}_{1}" .format(getobj, idx))
+                    dump_file = os.path.join(self.working_directory, f"objstm_{getobj}_{idx}")
                     idx += 1
                     obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
                     if obj_file:
