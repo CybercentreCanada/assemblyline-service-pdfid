@@ -18,6 +18,8 @@ from assemblyline_v4_service.common.request import MaxExtractedExceeded
 class PDFId(ServiceBase):
     def __init__(self, config=None):
         super(PDFId, self).__init__(config)
+        # Define a threshold for carved objects to meet before being added to submission
+        self.carved_obj_limit = 750
 
     @staticmethod
     def get_pdfid(path, additional_keywords, plugins, deep):
@@ -510,7 +512,7 @@ class PDFId(ServiceBase):
                             subres.set_heuristic(8)
 
                             con_bytes = con.encode()
-                            if len(con) < 500:
+                            if len(con) < self.carved_obj_limit:
                                 subres.body_format = BODY_FORMAT.MEMORY_DUMP
                                 subres.add_line(con)
 
@@ -536,7 +538,7 @@ class PDFId(ServiceBase):
                                 if crv_sha not in carved_extracted_shas:
                                     f_name = f"carved_content_obj_{k}_{crv_sha[0:7]}"
                                     subres.add_lines(
-                                        [f"Content over 500 bytes it will be extracted {extraction_purpose}",
+                                        [f"Content over {self.carved_obj_limit} bytes it will be extracted {extraction_purpose}",
                                          f"Name: {f_name} - SHA256: {crv_sha}"])
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
@@ -803,6 +805,7 @@ class PDFId(ServiceBase):
         """Main Module. See README for details."""
         max_size = self.config.get('MAX_PDF_SIZE', 3000000)
         request.result = result = Result()
+        self.carved_obj_limit = request.get_param('carved_obj_size_limit')
         if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
             path = request.file_path
             working_dir = self.working_directory

@@ -17,6 +17,12 @@ enabled: true
 is_external: false
 licence_count: 0
 
+submission_params:
+  - default: 750
+    name: "carved_obj_size_limit"
+    value: 750
+    type: int
+
 config:
   ADDITIONAL_KEYS: ['/URI', '/GoToE', '/GoToR', '/XObject']
   HEURISTICS: ['pdf_id/pdfid/plugin_embeddedfile', 'pdf_id/pdfid/plugin_nameobfuscation', 'pdf_id/pdfid/plugin_suspicious_properties', 'pdf_id/pdfid/plugin_triage']
