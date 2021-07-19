@@ -503,6 +503,7 @@ class PDFId(ServiceBase):
                 show_content_of_interest = True
 
             if len(carved_content) > 0:
+                carved_obj_size_limit = request.get_param('carved_obj_size_limit')
                 for k, l in sorted(carved_content.items()):
                     for d in l:
                         for keyw, con in d.items():
@@ -510,7 +511,7 @@ class PDFId(ServiceBase):
                             subres.set_heuristic(8)
 
                             con_bytes = con.encode()
-                            if len(con) < 500:
+                            if len(con) < carved_obj_size_limit:
                                 subres.body_format = BODY_FORMAT.MEMORY_DUMP
                                 subres.add_line(con)
 
@@ -536,7 +537,7 @@ class PDFId(ServiceBase):
                                 if crv_sha not in carved_extracted_shas:
                                     f_name = f"carved_content_obj_{k}_{crv_sha[0:7]}"
                                     subres.add_lines(
-                                        [f"Content over 500 bytes it will be extracted {extraction_purpose}",
+                                        [f"Content over {carved_obj_size_limit} bytes it will be extracted {extraction_purpose}",
                                          f"Name: {f_name} - SHA256: {crv_sha}"])
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
