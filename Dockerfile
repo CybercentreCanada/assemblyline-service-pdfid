@@ -1,4 +1,5 @@
-FROM cccs/assemblyline-v4-service-base:latest
+ARG branch=latest
+FROM cccs/assemblyline-v4-service-base:$branch
 
 # Set service to be run
 ENV SERVICE_PATH pdf_id.pdf_id.PDFId
