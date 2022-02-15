@@ -512,8 +512,7 @@ class PDFId(ServiceBase):
 
                             con_bytes = con.encode()
                             if len(con) < carved_obj_size_limit:
-                                subres.body_format = BODY_FORMAT.MEMORY_DUMP
-                                subres.add_line(con)
+                                subres.set_body(con, BODY_FORMAT.MEMORY_DUMP)
 
                                 # Check for IOC content
                                 patterns = PatternMatch()
