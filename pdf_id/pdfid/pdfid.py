@@ -14,13 +14,12 @@ import operator
 import math
 import traceback
 import xml.dom.minidom
-import re
 import os
 import optparse
 __description__ = 'Tool to test a PDF file'
 __author__ = 'Didier Stevens'
-__version__ = '0.2.7'
-__date__ = '2019/11/05'
+__version__ = '0.2.8'
+__date__ = '2020/11/21'
 
 """
 
@@ -73,36 +72,33 @@ History:
   2018/07/05: V0.2.5 introduced cExpandFilenameArguments; renamed option literal to literalfilenames
   2019/09/30: V0.2.6 color bugfix, thanks to Leo
   2019/11/05: V0.2.7 fixed plugin path when compiled with pyinstaller
+  2020/11/21: V0.2.8 added data argument to PDFiD function
 
 Todo:
   - update XML example (entropy, EOF)
   - code review, cleanup
 """
 
-if sys.version_info[0] >= 3:
-    import urllib.request as urllib23
-else:
-    import urllib2 as urllib23
-if sys.version_info[0] >= 3:
-    import configparser as ConfigParser
-else:
-    import ConfigParser
+# Editted, These are the conditional imports for python2/3, we only use pythton 3
+import urllib.request as urllib23
+import configparser as ConfigParser
+from io import BytesIO as DataIO
+
 
 # Convert 2 Bytes If Python 3
-
-
 def C2BIP3(string):
-    if sys.version_info[0] > 2:
-        return bytes([ord(x) for x in string])
-    else:
-        return string
+    # Edited, we only use python3 and using decode is much faster than the original list comprehension
+    return string.decode('latin-1')
 
 
 class cBinaryFile:
-    def __init__(self, file):
+    def __init__(self, file, data=None):
         self.file = file
-        if file == '':
-            self.infile = sys.stdin
+        if data is not None:
+            self.infile = DataIO(data)
+        elif file == '':
+            # Edited stdin should be bytes on python3
+            self.infile = sys.stdin.buffer
         elif file.lower().startswith('http://') or file.lower().startswith('https://'):
             try:
                 if sys.hexversion >= 0x020601F0:
@@ -117,14 +113,14 @@ class cBinaryFile:
             try:
                 self.zipfile = zipfile.ZipFile(file, 'r')
                 self.infile = self.zipfile.open(self.zipfile.infolist()[0], 'r', C2BIP3('infected'))
-            except:
+            except Exception:
                 print('Error opening file %s' % file)
                 print(sys.exc_info()[1])
                 sys.exit()
         else:
             try:
                 self.infile = open(file, 'rb')
-            except:
+            except Exception:
                 print('Error opening file %s' % file)
                 print(sys.exc_info()[1])
                 sys.exit()
@@ -145,12 +141,10 @@ class cBinaryFile:
             del self.ungetted[0:size]
             return result
         inbytes = self.infile.read(size - len(self.ungetted))
-        if inbytes == '':
+        # Edited, possible bug when inbytes is bytes (which it always is here)
+        if inbytes == b'':
             self.infile.close()
-        if type(inbytes) == type(''):
-            result = self.ungetted + [ord(b) for b in inbytes]
-        else:
-            result = self.ungetted + [b for b in inbytes]
+        result = self.ungetted + list(inbytes)
         self.ungetted = []
         return result
 
@@ -356,7 +350,7 @@ def UpdateWords(word, wordExact, slash, words, hexcode, allNames, lastName, insi
             if word == 'stream':
                 insideStream = True
             if word == 'endstream':
-                if insideStream == True and oEntropy != None:
+                if insideStream is True and oEntropy is not None:
                     for char in 'endstream':
                         oEntropy.removeInsideStream(ord(char))
                 insideStream = False
@@ -384,7 +378,7 @@ class cCVE_2009_3459:
 def XMLAddAttribute(xmlDoc, name, value=None):
     att = xmlDoc.createAttribute(name)
     xmlDoc.documentElement.setAttributeNode(att)
-    if value != None:
+    if value is not None:
         att.nodeValue = value
     return att
 
@@ -403,12 +397,12 @@ def ParseINIFile():
     keywords = []
     if oConfigParser.has_section('keywords'):
         for key, value in oConfigParser.items('keywords'):
-            if not key in keywords:
+            if key not in keywords:
                 keywords.append(key)
     return keywords
 
 
-def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, additional_keywords=[]):
+def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, data=None, additional_keywords=[]):
     """Example of XML output:
     <PDFiD ErrorOccured="False" ErrorMessage="" Filename="test.pdf" Header="%PDF-1.1" IsPDF="True" Version="0.0.4" Entropy="4.28">
             <Keywords>
@@ -480,7 +474,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
     try:
         attIsPDF = xmlDoc.createAttribute('IsPDF')
         xmlDoc.documentElement.setAttributeNode(attIsPDF)
-        oBinaryFile = cBinaryFile(file)
+        oBinaryFile = cBinaryFile(file, data)
         if extraData:
             oPDFDate = cPDFDate()
             oEntropy = cEntropy()
@@ -493,14 +487,14 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
                 fOut.write(C2BIP3(chr(byteHeader)))
         else:
             fOut = None
-        if oEntropy != None:
+        if oEntropy is not None:
             for byteHeader in bytesHeader:
                 oEntropy.add(byteHeader, insideStream)
-        if pdfHeader == None and not force:
+        if pdfHeader is None and not force:
             attIsPDF.nodeValue = 'False'
             return xmlDoc
         else:
-            if pdfHeader == None:
+            if pdfHeader is None:
                 attIsPDF.nodeValue = 'False'
                 pdfHeader = ''
             else:
@@ -509,7 +503,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
             att.nodeValue = repr(pdfHeader[0:10]).strip("'")
             xmlDoc.documentElement.setAttributeNode(att)
         byte = oBinaryFile.byte()
-        while byte != None:
+        while byte is not None:
             char = chr(byte)
             charUpper = char.upper()
             if charUpper >= 'A' and charUpper <= 'Z' or charUpper >= '0' and charUpper <= '9':
@@ -517,18 +511,18 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
                 wordExact.append(char)
             elif slash == '/' and char == '#':
                 d1 = oBinaryFile.byte()
-                if d1 != None:
+                if d1 is not None:
                     d2 = oBinaryFile.byte()
-                    if d2 != None and \
+                    if d2 is not None and \
                         (chr(d1) >= '0' and chr(d1) <= '9' or chr(d1).upper() >= 'A' and chr(d1).upper() <= 'F') and \
                             (chr(d2) >= '0' and chr(d2) <= '9' or chr(d2).upper() >= 'A' and chr(d2).upper() <= 'F'):
                         word += chr(int(chr(d1) + chr(d2), 16))
                         wordExact.append(int(chr(d1) + chr(d2), 16))
                         hexcode = True
-                        if oEntropy != None:
+                        if oEntropy is not None:
                             oEntropy.add(d1, insideStream)
                             oEntropy.add(d2, insideStream)
-                        if oPDFEOF != None:
+                        if oPDFEOF is not None:
                             oPDFEOF.parse(d1)
                             oPDFEOF.parse(d2)
                     else:
@@ -556,13 +550,13 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
                 if disarm:
                     fOut.write(C2BIP3(char))
 
-            if oPDFDate != None and oPDFDate.parse(char) != None:
+            if oPDFDate is not None and oPDFDate.parse(char) is not None:
                 dates.append([oPDFDate.date, lastName])
 
-            if oEntropy != None:
+            if oEntropy is not None:
                 oEntropy.add(byte, insideStream)
 
-            if oPDFEOF != None:
+            if oPDFEOF is not None:
                 oPDFEOF.parse(char)
 
             byte = oBinaryFile.byte()
@@ -571,7 +565,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
 
         # check to see if file ended with %%EOF.  If so, we can reset charsAfterLastEOF and add one to EOF count.  This is never performed in
         # the parse function because it never gets called due to hitting the end of file.
-        if byte == None and oPDFEOF != None:
+        if byte is None and oPDFEOF is not None:
             if oPDFEOF.token == '%%EOF':
                 oPDFEOF.cntEOFs += 1
                 oPDFEOF.cntCharsAfterLastEOF = 0
@@ -579,7 +573,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
 
     except SystemExit:
         sys.exit()
-    except:
+    except Exception:
         attErrorOccured.nodeValue = 'True'
         attErrorMessage.nodeValue = traceback.format_exc()
 
@@ -598,11 +592,11 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
     xmlDoc.documentElement.setAttributeNode(attEntropyNonStream)
     attCountNonStream = xmlDoc.createAttribute('NonStreamCount')
     xmlDoc.documentElement.setAttributeNode(attCountNonStream)
-    if oEntropy != None:
+    if oEntropy is not None:
         (countAll, entropyAll, countStream, entropyStream, countNonStream, entropyNonStream) = oEntropy.calc()
         attEntropyAll.nodeValue = '%f' % entropyAll
         attCountAll.nodeValue = '%d' % countAll
-        if entropyStream == None:
+        if entropyStream is None:
             attEntropyStream.nodeValue = 'N/A     '
         else:
             attEntropyStream.nodeValue = '%f' % entropyStream
@@ -620,7 +614,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
     xmlDoc.documentElement.setAttributeNode(attCountEOF)
     attCountCharsAfterLastEOF = xmlDoc.createAttribute('CountCharsAfterLastEOF')
     xmlDoc.documentElement.setAttributeNode(attCountCharsAfterLastEOF)
-    if oPDFEOF != None:
+    if oPDFEOF is not None:
         attCountEOF.nodeValue = '%d' % oPDFEOF.cntEOFs
         if oPDFEOF.cntEOFs > 0:
             attCountCharsAfterLastEOF.nodeValue = '%d' % oPDFEOF.cntCharsAfterLastEOF
@@ -658,7 +652,7 @@ def PDFiD(file, allNames=False, extraData=False, disarm=False, force=False, addi
     if allNames:
         keys = sorted(words.keys())
         for word in keys:
-            if not word in keywords:
+            if word not in keywords:
                 eleKeyword = xmlDoc.createElement('Keyword')
                 eleKeywords.appendChild(eleKeyword)
                 att = xmlDoc.createAttribute('Name')
@@ -944,11 +938,11 @@ def PDFiD2JSON(xmlDoc, force):
 def File2Strings(filename):
     try:
         f = open(filename, 'r')
-    except:
+    except Exception:
         return None
     try:
         return list(map(lambda line: line.rstrip('\n'), f.readlines()))
-    except:
+    except Exception:
         return None
     finally:
         f.close()
@@ -957,7 +951,7 @@ def File2Strings(filename):
 def ProcessAt(argument):
     if argument.startswith('@'):
         strings = File2Strings(argument[1:])
-        if strings == None:
+        if strings is None:
             raise Exception('Error reading %s' % argument)
         else:
             return strings
@@ -987,7 +981,7 @@ class cExpandFilenameArguments():
             self.filenameexpressions = [[filename, ''] for filename in filenames]
         elif recursedir:
             for dirwildcard in filenames:
-                if expressionprefix != None and dirwildcard.startswith(expressionprefix):
+                if expressionprefix is not None and dirwildcard.startswith(expressionprefix):
                     expression = dirwildcard[len(expressionprefix):]
                 else:
                     if dirwildcard.startswith('@'):
@@ -1011,7 +1005,7 @@ class cExpandFilenameArguments():
                 sum(map(self.Glob, sum(map(ProcessAt, filenames),
                                        [])),
                     []))):
-                if expressionprefix != None and filename.startswith(expressionprefix):
+                if expressionprefix is not None and filename.startswith(expressionprefix):
                     expression = filename[len(expressionprefix):]
                 else:
                     self.filenameexpressions.append([filename, expression])
@@ -1038,7 +1032,7 @@ class cExpandFilenameArguments():
             hashfile = False
             try:
                 hashfile = FilenameCheckHash(filename, self.literalfilenames)[0] == FCH_DATA
-            except:
+            except Exception:
                 pass
             if filename == '' or hashfile:
                 valid.append([filename, expression])
@@ -1058,7 +1052,7 @@ class cExpandFilenameArguments():
                 ' '.join(isnotafile) + '\n'
 
     def Filenames(self):
-        if self.expressionprefix == None:
+        if self.expressionprefix is None:
             return [filename for filename, expression in self.filenameexpressions]
         else:
             return self.filenameexpressions
