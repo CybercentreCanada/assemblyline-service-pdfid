@@ -11,7 +11,7 @@ from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 from assemblyline_v4_service.common.request import MaxExtractedExceeded
 
 
@@ -65,7 +65,7 @@ class PDFId(ServiceBase):
                 if isinstance(value, dict):
                     try:
                         pdfid_result_dict = recursive_update(pdfid_result_dict, value)
-                    except:
+                    except Exception:
                         pass
 
         return pdfid_result_dict, errors
