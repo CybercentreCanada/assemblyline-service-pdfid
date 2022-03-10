@@ -252,17 +252,14 @@ class cPDFDocument:
         self.ungetted.append(byte)
 
 
-def CharacterClass(byte):
-    if byte == 0 or byte == 9 or byte == 10 or byte == 12 or byte == 13 or byte == 32:
-        return CHAR_WHITESPACE
-    if byte == 0x28 or byte == 0x29 or byte == 0x3C or byte == 0x3E or byte == 0x5B or byte == 0x5D or byte == 0x7B or byte == 0x7D or byte == 0x2F or byte == 0x25:
-        return CHAR_DELIMITER
-    return CHAR_REGULAR
-
-
 def IsNumeric(str):
     return re.match('^[0-9]+', str)
 
+# Edited, CharacterClass can be replaced by much faster set containment checks.
+# Tokenizing is a hot part of the code any gains here are significant
+WHITESPACE_SET = {0, 9, 10, 12, 13, 32}
+DELIMETER_SET = {0x28, 0x29, 0x3C, 0x3E, 0x5B, 0x5D, 0x7B, 0x7D, 0x2F, 0x25}
+NON_REGULAR_SET = WHITESPACE_SET.union(DELIMETER_SET)
 
 class cPDFTokenizer:
     def __init__(self, file):
@@ -270,7 +267,7 @@ class cPDFTokenizer:
         self.ungetted = []
 
     def Token(self):
-        if len(self.ungetted) != 0:
+        if self.ungetted:
             return self.ungetted.pop()
         if self.oPDF is None:
             return None
@@ -278,9 +275,9 @@ class cPDFTokenizer:
         if self.byte is None:
             self.oPDF = None
             return None
-        elif CharacterClass(self.byte) == CHAR_WHITESPACE:
+        elif self.byte in WHITESPACE_SET:
             file_str = StringIO()
-            while self.byte is not None and CharacterClass(self.byte) == CHAR_WHITESPACE:
+            while self.byte is not None and self.byte in WHITESPACE_SET:
                 file_str.write(chr(self.byte))
                 self.byte = self.oPDF.byte()
             if self.byte is not None:
@@ -289,9 +286,9 @@ class cPDFTokenizer:
                 self.oPDF = None
             self.token = file_str.getvalue()
             return (CHAR_WHITESPACE, self.token)
-        elif CharacterClass(self.byte) == CHAR_REGULAR:
+        elif self.byte not in DELIMETER_SET:
             file_str = StringIO()
-            while self.byte is not None and CharacterClass(self.byte) == CHAR_REGULAR:
+            while self.byte is not None and self.byte not in NON_REGULAR_SET:
                 file_str.write(chr(self.byte))
                 self.byte = self.oPDF.byte()
             if self.byte is not None:
