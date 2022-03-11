@@ -125,7 +125,7 @@ PDF_ELEMENT_STARTXREF = 5
 PDF_ELEMENT_MALFORMED = 6
 
 # Edited, build default table once
-FEED_TABLE = list(bytes(i for i in range(256)).decode('latin-1'))) + [None, None]
+FEED_TABLE = list(bytes(i for i in range(256)).decode('latin-1')) + [None, None]
 
 dumplinelength = 16
 
@@ -255,11 +255,13 @@ class cPDFDocument:
 def IsNumeric(str):
     return re.match('^[0-9]+', str)
 
+
 # Edited, CharacterClass can be replaced by much faster set containment checks.
 # Tokenizing is a hot part of the code any gains here are significant
 WHITESPACE_SET = {0, 9, 10, 12, 13, 32}
 DELIMETER_SET = {0x28, 0x29, 0x3C, 0x3E, 0x5B, 0x5D, 0x7B, 0x7D, 0x2F, 0x25}
 NON_REGULAR_SET = WHITESPACE_SET.union(DELIMETER_SET)
+
 
 class cPDFTokenizer:
     def __init__(self, file):
