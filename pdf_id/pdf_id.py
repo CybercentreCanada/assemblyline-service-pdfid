@@ -550,7 +550,8 @@ class PDFId(ServiceBase):
                                                                       f"Supplementary content from object {k}")
                                         else:
                                             request.add_extracted(crvf, os.path.basename(crvf),
-                                                                  f"Extracted content from object {k}")
+                                                                  f"Extracted content from object {k}",
+                                                                  safelist_interface=self.api_interface)
                                     except MaxExtractedExceeded:
                                         pass
                                     carved_extracted_shas.add(crv_sha)
@@ -597,7 +598,8 @@ class PDFId(ServiceBase):
                                     for i in l:
                                         try:
                                             request.add_extracted(i, os.path.basename(i),
-                                                                  "Extracted malformed content in PDF Parser Analysis.")
+                                                                  "Extracted malformed content in PDF Parser Analysis.",
+                                                                  safelist_interface=self.api_interface)
                                         except MaxExtractedExceeded:
                                             break
 
@@ -630,10 +632,11 @@ class PDFId(ServiceBase):
                                     for i in l:
                                         f_name = os.path.basename(i)
                                         obj_id = f_name.replace("extracted_obj_", "")
-                                        extracted_files.append(f"Extracted object {obj_id} as {f_name}")
                                         try:
-                                            request.add_extracted(i, f_name,
-                                                                  f"Object {obj_id} extracted in PDF Parser Analysis.")
+                                            if request.add_extracted(
+                                                    i, f_name, f"Object {obj_id} extracted in PDF Parser Analysis.",
+                                                    safelist_interface=self.api_interface):
+                                                extracted_files.append(f"Extracted object {obj_id} as {f_name}")
                                         except MaxExtractedExceeded:
                                             break
                         for e in errors:
@@ -664,9 +667,12 @@ class PDFId(ServiceBase):
                                         obj_id = f_name.replace("extracted_jb_obj_", "")
                                         extracted_jb.append(f"JBIG2DECODE object {obj_id} extracted as {f_name}")
                                         try:
-                                            request.add_extracted(
+                                            if request.add_extracted(
                                                 i, f_name,
-                                                f"JBIG2DECODE object {obj_id} extracted in PDF Parser Analysis.")
+                                                f"JBIG2DECODE object {obj_id} extracted in PDF Parser Analysis.",
+                                                    safelist_interface=self.api_interface):
+                                                extracted_jb.append(
+                                                    f"JBIG2DECODE object {obj_id} extracted as {f_name}")
                                         except MaxExtractedExceeded:
                                             break
 
