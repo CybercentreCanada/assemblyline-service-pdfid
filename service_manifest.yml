@@ -4,7 +4,7 @@ description: >-
   This service extracts metadata from PDFs using Didier Stevens PDFId & PDFParser.
 
 accepts: document/pdf
-rejects: empty|metadata/.*
+rejects: empty|metadata/.*|document/pdf/passwordprotected
 
 stage: CORE
 category: Static Analysis
