@@ -1,18 +1,21 @@
-from copy import deepcopy
-
-from pdf_id.pdfid import pdfid
-from pdf_id.pdfparser import pdf_parser
 import hashlib
 import os
 import re
 import unicodedata
+from copy import deepcopy
+from typing import Optional
+
+import pikepdf
 
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.odm.base import FULL_URI
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import Heuristic, Result, ResultSection, BODY_FORMAT
 from assemblyline_v4_service.common.request import MaxExtractedExceeded
+from pdf_id.pdfid import pdfid
+from pdf_id.pdfparser import pdf_parser
 
 
 class PDFId(ServiceBase):
@@ -799,6 +802,33 @@ class PDFId(ServiceBase):
 
         return obj_files
 
+    def additional_parsing(self, file_path: str) -> Optional[ResultSection]:
+        urls = set()
+        try:
+            with pikepdf.open(file_path) as pdf:
+                num_pages = len(pdf.pages)
+                for page in pdf.pages:
+                    if '/Annots' not in page:
+                        continue
+                    for annot in page['/Annots'].as_list():
+                        if annot.get('/Subtype') == '/Link':
+                            if '/A' not in annot:
+                                continue
+                        url = annot['/A'].get('/URI')
+                        if not hasattr(url, '__str__'):
+                            continue
+                        url = str(url)
+                        if re.match(FULL_URI, url):
+                            urls.add(url)
+            return ResultSection('URL in Annotations',
+                                 heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
+                                 body='\n'.join(urls),
+                                 tags={'network.static.url': list(urls)}
+                                 ) if urls else None
+        except Exception as e:
+            self.log.warning(f'pikepdf failed to parse sample: {e}')
+            return None
+
     def execute(self, request):
         """Main Module. See README for details."""
         max_size = self.config.get('MAX_PDF_SIZE', 3000000)
@@ -842,6 +872,10 @@ class PDFId(ServiceBase):
                 for e in all_errors:
                     erres.add_line(e)
                 result.add_section(erres)
+
+            more_res = self.additional_parsing(request.file_path)
+            if more_res:
+                result.add_section(more_res)
 
         else:
             section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
