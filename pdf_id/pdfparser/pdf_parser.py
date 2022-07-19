@@ -125,7 +125,7 @@ PDF_ELEMENT_STARTXREF = 5
 PDF_ELEMENT_MALFORMED = 6
 
 # Edited, build default table once
-FEED_TABLE = list(bytes(i for i in range(256)).decode('latin-1'))) + [None, None]
+FEED_TABLE = list(bytes(i for i in range(256)).decode('latin-1')) + [None, None]
 
 dumplinelength = 16
 
