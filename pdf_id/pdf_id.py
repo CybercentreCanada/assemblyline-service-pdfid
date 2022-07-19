@@ -825,7 +825,7 @@ class PDFId(ServiceBase):
             return ResultSection('URL in Annotations',
                                  heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
                                  body=body,
-                                 tags={ty: list(vals) for ty, vals in patterns.ioc_match(body)}
+                                 tags={ty: list(vals) for ty, vals in patterns.ioc_match(body.encode())}
                                  ) if urls else None
         except Exception as e:
             self.log.warning(f'pikepdf failed to parse sample: {e}')
