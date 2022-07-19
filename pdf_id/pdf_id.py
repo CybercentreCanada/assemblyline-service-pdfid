@@ -814,16 +814,18 @@ class PDFId(ServiceBase):
                         if annot.get('/Subtype') == '/Link':
                             if '/A' not in annot:
                                 continue
-                        url = annot['/A'].get('/URI')
-                        if not hasattr(url, '__str__'):
+                        _url = annot['/A'].get('/URI')
+                        if not hasattr(_url, '__str__'):
                             continue
-                        url = str(url)
+                        url = str(_url)
                         if re.match(FULL_URI, url):
                             urls.add(url)
+            patterns = PatternMatch()
+            body = '\n'.join(urls)
             return ResultSection('URL in Annotations',
                                  heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                 body='\n'.join(urls),
-                                 tags={'network.static.url': list(urls)}
+                                 body=body,
+                                 tags={ty: list(vals) for ty, vals in patterns.ioc_match(body)}
                                  ) if urls else None
         except Exception as e:
             self.log.warning(f'pikepdf failed to parse sample: {e}')
