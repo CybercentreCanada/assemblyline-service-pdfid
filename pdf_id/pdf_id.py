@@ -9,6 +9,7 @@ import pikepdf
 
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.common.str_utils import safe_str
 from assemblyline.odm.base import FULL_URI
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
@@ -524,13 +525,8 @@ class PDFId(ServiceBase):
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
                                     for ty, val in st_value.items():
-                                        if val == "":
-                                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                            subres.add_tag(ty, asc_asc)
-                                        else:
-                                            ulis = list(set(val))
-                                            for v in ulis:
-                                                subres.add_tag(ty, v)
+                                        for v in val:
+                                            subres.add_tag(ty, v)
                             else:
                                 crv_sha = hashlib.sha256(con_bytes).hexdigest()
                                 is_supplementary = keyw in ['URI']
@@ -820,13 +816,18 @@ class PDFId(ServiceBase):
                         url = str(_url)
                         if re.match(FULL_URI, url):
                             urls.add(url)
+            if not urls:
+                return None
             patterns = PatternMatch()
             body = '\n'.join(urls)
-            return ResultSection('URL in Annotations',
-                                 heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                 body=body,
-                                 tags={ty: list(vals) for ty, vals in patterns.ioc_match(body.encode())}
-                                 ) if urls else None
+            tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
+            result = ResultSection('URL in Annotations',
+                                   heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
+                                   body=body)
+            for ty, vals in tags.items():
+                for val in vals:
+                    result.add_tag(ty, val)
+            return result
         except Exception as e:
             self.log.warning(f'pikepdf failed to parse sample: {e}')
             return None
