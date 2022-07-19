@@ -1,18 +1,22 @@
-from copy import deepcopy
-
-from pdf_id.pdfid import pdfid
-from pdf_id.pdfparser import pdf_parser
 import hashlib
 import os
 import re
 import unicodedata
+from copy import deepcopy
+from typing import Optional
+
+import pikepdf
 
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.common.str_utils import safe_str
+from assemblyline.odm.base import FULL_URI
 from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import Heuristic, Result, ResultSection, BODY_FORMAT
 from assemblyline_v4_service.common.request import MaxExtractedExceeded
+from pdf_id.pdfid import pdfid
+from pdf_id.pdfparser import pdf_parser
 
 
 class PDFId(ServiceBase):
@@ -521,13 +525,8 @@ class PDFId(ServiceBase):
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
                                     for ty, val in st_value.items():
-                                        if val == "":
-                                            asc_asc = unicodedata.normalize('NFKC', val).encode('ascii', 'ignore')
-                                            subres.add_tag(ty, asc_asc)
-                                        else:
-                                            ulis = list(set(val))
-                                            for v in ulis:
-                                                subres.add_tag(ty, v)
+                                        for v in val:
+                                            subres.add_tag(ty, v)
                             else:
                                 crv_sha = hashlib.sha256(con_bytes).hexdigest()
                                 is_supplementary = keyw in ['URI']
@@ -805,6 +804,40 @@ class PDFId(ServiceBase):
 
         return obj_files
 
+    def additional_parsing(self, file_path: str) -> Optional[ResultSection]:
+        urls = set()
+        try:
+            with pikepdf.open(file_path) as pdf:
+                num_pages = len(pdf.pages)
+                for page in pdf.pages:
+                    if '/Annots' not in page:
+                        continue
+                    for annot in page['/Annots'].as_list():
+                        if annot.get('/Subtype') == '/Link':
+                            if '/A' not in annot:
+                                continue
+                        _url = annot['/A'].get('/URI')
+                        if not hasattr(_url, '__str__'):
+                            continue
+                        url = str(_url)
+                        if re.match(FULL_URI, url):
+                            urls.add(url)
+            if not urls:
+                return None
+            patterns = PatternMatch()
+            body = '\n'.join(urls)
+            tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
+            result = ResultSection('URL in Annotations',
+                                   heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
+                                   body=body)
+            for ty, vals in tags.items():
+                for val in vals:
+                    result.add_tag(ty, val)
+            return result
+        except Exception as e:
+            self.log.warning(f'pikepdf failed to parse sample: {e}')
+            return None
+
     def execute(self, request):
         """Main Module. See README for details."""
         max_size = self.config.get('MAX_PDF_SIZE', 3000000)
@@ -848,6 +881,10 @@ class PDFId(ServiceBase):
                 for e in all_errors:
                     erres.add_line(e)
                 result.add_section(erres)
+
+            more_res = self.additional_parsing(request.file_path)
+            if more_res:
+                result.add_section(more_res)
 
         else:
             section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
