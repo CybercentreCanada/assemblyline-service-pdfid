@@ -185,6 +185,13 @@ heuristics:
     name: Only one page
     score: 50
 
+  - description: URL found in PDF Annotations
+    filetype: "document/pdf"
+    heur_id: 27
+    name: URL in Annotations
+    score: 0
+    signature_score_map:
+      one_page: 0
 
 
 docker_config:

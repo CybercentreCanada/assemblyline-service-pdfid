@@ -5,6 +5,8 @@ FROM cccs/assemblyline-v4-service-base:$branch
 ENV SERVICE_PATH pdf_id.pdf_id.PDFId
 
 # There should be no dependancies to install according to the installer.py
+# install our dependancies
+RUN pip install --no-cache-dir --user pikepdf
 
 # Switch to assemblyline user
 USER assemblyline
