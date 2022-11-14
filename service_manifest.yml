@@ -191,7 +191,7 @@ heuristics:
     name: URL in Annotations
     score: 0
     signature_score_map:
-      one_page: 100
+      one_page: 0
 
 
 docker_config:
