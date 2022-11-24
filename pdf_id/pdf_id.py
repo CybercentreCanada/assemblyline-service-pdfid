@@ -111,7 +111,8 @@ class PDFId(ServiceBase):
             'generate': 0,
             'yara': None,
             'key': '',
-            'object': ''
+            'object': '',
+            'searchstream': '',
         }
         options.update(op_cpy)
 
