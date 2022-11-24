@@ -16,6 +16,11 @@ import traceback
 import xml.dom.minidom
 import os
 import optparse
+# Editted, These are the conditional imports for python2/3, we only use pythton 3
+from io import BytesIO as DataIO
+import configparser as ConfigParser
+import urllib.request as urllib23
+
 __description__ = 'Tool to test a PDF file'
 __author__ = 'Didier Stevens'
 __version__ = '0.2.8'
@@ -78,11 +83,6 @@ Todo:
   - update XML example (entropy, EOF)
   - code review, cleanup
 """
-
-# Editted, These are the conditional imports for python2/3, we only use pythton 3
-import urllib.request as urllib23
-import configparser as ConfigParser
-from io import BytesIO as DataIO
 
 
 # Convert 2 Bytes If Python 3
@@ -800,7 +800,8 @@ def ProcessFile(filename, options, plugins, additional_keywords):
     results = []
     errors = set()
 
-    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, additional_keywords)
+    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force,
+                   additional_keywords=additional_keywords)
     strresult = PDFiD2String(xmlDoc, options.nozero, options.force).split('\n')
     for l in strresult:
         if l.startswith('***Error occured***'):
