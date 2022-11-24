@@ -94,7 +94,7 @@ def C2BIP3(string):
 class cBinaryFile:
     def __init__(self, file, data=None):
         self.file = file
-        if data is not None and not isinstance(data, list):
+        if data is not None:
             self.infile = DataIO(data)
         elif file == '':
             # Edited stdin should be bytes on python3
@@ -800,7 +800,8 @@ def ProcessFile(filename, options, plugins, additional_keywords):
     results = []
     errors = set()
 
-    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force, additional_keywords)
+    xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force,
+                   additional_keywords=additional_keywords)
     strresult = PDFiD2String(xmlDoc, options.nozero, options.force).split('\n', 1)
     for l in strresult:
         if l.startswith('***Error occured***'):
