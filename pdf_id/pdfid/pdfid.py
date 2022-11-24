@@ -802,7 +802,7 @@ def ProcessFile(filename, options, plugins, additional_keywords):
 
     xmlDoc = PDFiD(filename, options.all, options.extra, options.disarm, options.force,
                    additional_keywords=additional_keywords)
-    strresult = PDFiD2String(xmlDoc, options.nozero, options.force).split('\n', 1)
+    strresult = PDFiD2String(xmlDoc, options.nozero, options.force).split('\n')
     for l in strresult:
         if l.startswith('***Error occured***'):
             errors.add(l)
