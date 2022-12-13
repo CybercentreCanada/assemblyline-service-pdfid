@@ -508,7 +508,7 @@ class PDFId(ServiceBase):
                 show_content_of_interest = True
 
             if len(carved_content) > 0:
-                carved_obj_size_limit = request.get_param('carved_obj_size_limit')
+                carved_obj_size_limit = int(request.get_param('carved_obj_size_limit'))
                 for k, l in sorted(carved_content.items()):
                     for d in l:
                         for keyw, con in d.items():
