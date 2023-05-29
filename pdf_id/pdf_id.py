@@ -6,15 +6,13 @@ from copy import deepcopy
 from typing import Optional
 
 import pikepdf
-
-from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.common.dict_utils import recursive_update
-from assemblyline.common.str_utils import safe_str
+from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
-from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
+from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Heuristic, Result, ResultSection, BODY_FORMAT
 from assemblyline_v4_service.common.request import MaxExtractedExceeded
+from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
 
