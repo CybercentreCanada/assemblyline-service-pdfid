@@ -23,6 +23,58 @@ class PDFId(ServiceBase):
     def __init__(self, config=None):
         super(PDFId, self).__init__(config)
 
+    def execute(self, request):
+        """Main Module. See README for details."""
+        max_size = self.config.get('MAX_PDF_SIZE', 3000000)
+        request.result = result = Result()
+        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
+            path = request.file_path
+            working_dir = self.working_directory
+
+            # CALL PDFID and identify all suspicious keyword streams
+            additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
+            heur = deepcopy(self.config.get('HEURISTICS', []))
+            all_errors = set()
+
+            res_txt = "Main Document Results"
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir,
+                                                             heur, additional_keywords)
+            result.add_section(res)
+
+            for e in errors:
+                all_errors.add(e)
+
+            #  ObjStms: Treat all ObjStms like a standalone PDF document
+            if contains_objstms:
+                objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
+                obj_cnt = 1
+                for osf in objstm_files:
+                    parent_obj = os.path.basename(osf).split("_")[1]
+                    res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
+                    # It is going to look suspicious as the service created the PDF
+                    heur = [x for x in heur if 'plugin_suspicious_properties' not in x
+                            and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
+
+                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
+                                                                     additional_keywords, get_malform=False)
+
+                    obj_cnt += 1
+                    result.add_section(res)
+
+            if len(all_errors) > 0:
+                erres = ResultSection(title_text="Errors Analyzing PDF")
+                for e in all_errors:
+                    erres.add_line(e)
+                result.add_section(erres)
+
+            # pikepdf parsing
+            self.additional_parsing(request)
+
+        else:
+            section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
+            section.set_heuristic(10)
+            result.add_section(section)
+
     @staticmethod
     def get_pdfid(path, additional_keywords, plugins, deep):
         """Run PDFId code on sample.
@@ -844,58 +896,6 @@ class PDFId(ServiceBase):
                 request.result.add_section(
                     ResultSection('PDF Scripts', heuristic=heuristic, tags=tags)
                 )
-
-    def execute(self, request):
-        """Main Module. See README for details."""
-        max_size = self.config.get('MAX_PDF_SIZE', 3000000)
-        request.result = result = Result()
-        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
-            path = request.file_path
-            working_dir = self.working_directory
-
-            # CALL PDFID and identify all suspicious keyword streams
-            additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
-            heur = deepcopy(self.config.get('HEURISTICS', []))
-            all_errors = set()
-
-            res_txt = "Main Document Results"
-            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir,
-                                                             heur, additional_keywords)
-            result.add_section(res)
-
-            for e in errors:
-                all_errors.add(e)
-
-            #  ObjStms: Treat all ObjStms like a standalone PDF document
-            if contains_objstms:
-                objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
-                obj_cnt = 1
-                for osf in objstm_files:
-                    parent_obj = os.path.basename(osf).split("_")[1]
-                    res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
-                    # It is going to look suspicious as the service created the PDF
-                    heur = [x for x in heur if 'plugin_suspicious_properties' not in x
-                            and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
-
-                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
-                                                                     additional_keywords, get_malform=False)
-
-                    obj_cnt += 1
-                    result.add_section(res)
-
-            if len(all_errors) > 0:
-                erres = ResultSection(title_text="Errors Analyzing PDF")
-                for e in all_errors:
-                    erres.add_line(e)
-                result.add_section(erres)
-
-            # pikepdf parsing
-            self.additional_parsing(request)
-
-        else:
-            section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
-            section.set_heuristic(10)
-            result.add_section(section)
 
     def _get_annotation_urls(self, pdf: pikepdf.Pdf) -> set[str]:
         urls = set()
