@@ -193,6 +193,15 @@ heuristics:
     signature_score_map:
       one_page: 0
 
+  - description: XML script tags found in pdf streams
+    filetype: "document/pdf"
+    heur_id: 28
+    name: PDF stream scripts
+    score: 0
+    signature_score_map:
+      foxit: 0
+
+
 
 docker_config:
   image: ${REGISTRY}cccs/assemblyline-service-pdfid:$SERVICE_TAG

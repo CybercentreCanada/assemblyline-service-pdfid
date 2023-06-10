@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import re
-import unicodedata
 from copy import deepcopy
-from typing import Optional
+from itertools import chain
 
 import pikepdf
 from assemblyline.common.dict_utils import recursive_update
@@ -11,8 +12,9 @@ from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.request import MaxExtractedExceeded
+from assemblyline_v4_service.common.request import MaxExtractedExceeded, ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
 
@@ -803,39 +805,45 @@ class PDFId(ServiceBase):
 
         return obj_files
 
-    def additional_parsing(self, file_path: str) -> Optional[ResultSection]:
-        urls = set()
+    def additional_parsing(self, request: ServiceRequest) -> None:
         try:
-            with pikepdf.open(file_path) as pdf:
+            with pikepdf.open(request.file_path) as pdf:
                 num_pages = len(pdf.pages)
-                for page in pdf.pages:
-                    if '/Annots' not in page:
-                        continue
-                    for annot in page['/Annots'].as_list():
-                        if annot.get('/Subtype') == '/Link':
-                            if '/A' not in annot:
-                                continue
-                        _url = annot['/A'].get('/URI')
-                        if not hasattr(_url, '__str__'):
-                            continue
-                        url = str(_url)
-                        if re.match(FULL_URI, url):
-                            urls.add(url)
-            if not urls:
-                return None
-            patterns = PatternMatch()
-            body = '\n'.join(urls)
-            tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
-            result = ResultSection('URL in Annotations',
-                                   heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                   body=body)
-            for ty, vals in tags.items():
-                for val in vals:
-                    result.add_tag(ty, val)
-            return result
+                urls = self._get_annotation_urls(pdf)
+                scripts = self._get_scripts(pdf)
         except Exception as e:
             self.log.warning(f'pikepdf failed to parse sample: {e}')
-            return None
+        else:
+            patterns = PatternMatch()
+            if urls:
+                body = '\n'.join(urls)
+                tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
+                request.result.add_section(
+                    ResultSection('URL in Annotations',
+                                  body=body,
+                                  heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
+                                  tags=tags))
+            if scripts:
+                tags = patterns.ioc_match(body.encode())
+                all_scripts = b'\n'.join(scripts)
+                heuristic = Heuristic(28)
+                if b'exportXFAData' in all_scripts:
+                    tags['attribution.exploit'] = {b'CVE-2023-27363'}
+                    heuristic.add_signature_id('foxit')
+                scripts_name = hashlib.sha256(all_scripts).hexdigest()[:8] + '_scripts.js'
+                scripts_path = os.path.join(self.working_directory, scripts_name)
+                try:
+                    with open(scripts_path, 'wb') as f:
+                        f.write(all_scripts)
+                    try:
+                        request.add_extracted(scripts_path, scripts_name, 'Scripts extracted from PDF streams.')
+                    except MaxExtractedExceeded:
+                        pass
+                except Exception as e:
+                    self.log.warning(f'Failed to write scripts file: {e}')
+                request.result.add_section(
+                    ResultSection('PDF Scripts', heuristic=heuristic, tags=tags)
+                )
 
     def execute(self, request):
         """Main Module. See README for details."""
@@ -881,11 +889,32 @@ class PDFId(ServiceBase):
                     erres.add_line(e)
                 result.add_section(erres)
 
-            more_res = self.additional_parsing(request.file_path)
-            if more_res:
-                result.add_section(more_res)
+            # pikepdf parsing
+            self.additional_parsing(request)
 
         else:
             section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
             section.set_heuristic(10)
             result.add_section(section)
+
+    def _get_annotation_urls(self, pdf: pikepdf.Pdf) -> set[str]:
+        urls = set()
+        for page in pdf.pages:
+            if '/Annots' not in page:
+                continue
+            for annot in page['/Annots'].as_list():
+                if annot.get('/Subtype') != '/Link' or '/A' not in annot:
+                    continue
+                _url = annot['/A'].get('/URI')
+                if not hasattr(_url, '__str__'):
+                    continue
+                url = str(_url)
+                if re.match(FULL_URI, url):
+                    urls.add(url)
+        return urls
+
+    def _get_scripts(self, pdf: pikepdf.Pdf) -> list[bytes]:
+        return list(chain.from_iterable(
+            re.findall(rb'(?s)<script\b[^>]*>([^<].*?)</script\s*>', _object.read_bytes())
+            for _object in pdf.objects if isinstance(_object, pikepdf.Stream)
+        ))
