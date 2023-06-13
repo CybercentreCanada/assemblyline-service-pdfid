@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+from collections.abc import Iterable
 from copy import deepcopy
 from itertools import chain
 
@@ -17,6 +18,13 @@ from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result
 
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
+
+
+def convert_tags(tags: dict[str, Iterable[bytes]]) -> dict[str, list[str]]:
+    return {
+        tag_type: [tag.decode() for tag in tag_set]
+        for tag_type, tag_set in tags.items()
+    }
 
 
 class PDFId(ServiceBase):
@@ -869,18 +877,18 @@ class PDFId(ServiceBase):
             patterns = PatternMatch()
             if urls:
                 body = '\n'.join(urls)
-                tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
                 request.result.add_section(
                     ResultSection('URL in Annotations',
                                   body=body,
                                   heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                  tags=tags))
+                                  tags=convert_tags(patterns.ioc_match(body.encode())))
+                )
             if scripts:
-                tags = patterns.ioc_match(body.encode())
                 all_scripts = b'\n'.join(scripts)
+                tags: dict[str, list[str]] = convert_tags(patterns.ioc_match(all_scripts))
                 heuristic = Heuristic(28)
                 if b'exportXFAData' in all_scripts:
-                    tags['attribution.exploit'] = {b'CVE-2023-27363'}
+                    tags['attribution.exploit'] = ['CVE-2023-27363']
                     heuristic.add_signature_id('foxit')
                 scripts_name = hashlib.sha256(all_scripts).hexdigest()[:8] + '_scripts.js'
                 scripts_path = os.path.join(self.working_directory, scripts_name)
