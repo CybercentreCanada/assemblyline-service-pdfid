@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import re
-import unicodedata
+from collections.abc import Iterable
 from copy import deepcopy
-from typing import Optional
+from itertools import chain
 
 import pikepdf
 from assemblyline.common.dict_utils import recursive_update
@@ -11,15 +13,75 @@ from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.request import MaxExtractedExceeded
+from assemblyline_v4_service.common.request import MaxExtractedExceeded, ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
+
+
+def convert_tags(tags: dict[str, Iterable[bytes]]) -> dict[str, list[str]]:
+    return {
+        tag_type: [tag.decode() for tag in tag_set]
+        for tag_type, tag_set in tags.items()
+    }
 
 
 class PDFId(ServiceBase):
     def __init__(self, config=None):
         super(PDFId, self).__init__(config)
+
+    def execute(self, request):
+        """Main Module. See README for details."""
+        max_size = self.config.get('MAX_PDF_SIZE', 3000000)
+        request.result = result = Result()
+        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
+            path = request.file_path
+            working_dir = self.working_directory
+
+            # CALL PDFID and identify all suspicious keyword streams
+            additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
+            heur = deepcopy(self.config.get('HEURISTICS', []))
+            all_errors = set()
+
+            res_txt = "Main Document Results"
+            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir,
+                                                             heur, additional_keywords)
+            result.add_section(res)
+
+            for e in errors:
+                all_errors.add(e)
+
+            #  ObjStms: Treat all ObjStms like a standalone PDF document
+            if contains_objstms:
+                objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
+                obj_cnt = 1
+                for osf in objstm_files:
+                    parent_obj = os.path.basename(osf).split("_")[1]
+                    res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
+                    # It is going to look suspicious as the service created the PDF
+                    heur = [x for x in heur if 'plugin_suspicious_properties' not in x
+                            and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
+
+                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
+                                                                     additional_keywords, get_malform=False)
+
+                    obj_cnt += 1
+                    result.add_section(res)
+
+            if len(all_errors) > 0:
+                erres = ResultSection(title_text="Errors Analyzing PDF")
+                for e in all_errors:
+                    erres.add_line(e)
+                result.add_section(erres)
+
+            # pikepdf parsing
+            self.additional_parsing(request)
+
+        else:
+            section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
+            section.set_heuristic(10)
+            result.add_section(section)
 
     @staticmethod
     def get_pdfid(path, additional_keywords, plugins, deep):
@@ -803,89 +865,64 @@ class PDFId(ServiceBase):
 
         return obj_files
 
-    def additional_parsing(self, file_path: str) -> Optional[ResultSection]:
-        urls = set()
+    def additional_parsing(self, request: ServiceRequest) -> None:
         try:
-            with pikepdf.open(file_path) as pdf:
+            with pikepdf.open(request.file_path) as pdf:
                 num_pages = len(pdf.pages)
-                for page in pdf.pages:
-                    if '/Annots' not in page:
-                        continue
-                    for annot in page['/Annots'].as_list():
-                        if annot.get('/Subtype') == '/Link':
-                            if '/A' not in annot:
-                                continue
-                        _url = annot['/A'].get('/URI')
-                        if not hasattr(_url, '__str__'):
-                            continue
-                        url = str(_url)
-                        if re.match(FULL_URI, url):
-                            urls.add(url)
-            if not urls:
-                return None
-            patterns = PatternMatch()
-            body = '\n'.join(urls)
-            tags: dict[str, set[bytes]] = patterns.ioc_match(body.encode())
-            result = ResultSection('URL in Annotations',
-                                   heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                   body=body)
-            for ty, vals in tags.items():
-                for val in vals:
-                    result.add_tag(ty, val)
-            return result
+                urls = self._get_annotation_urls(pdf)
+                scripts = self._get_scripts(pdf)
         except Exception as e:
             self.log.warning(f'pikepdf failed to parse sample: {e}')
-            return None
-
-    def execute(self, request):
-        """Main Module. See README for details."""
-        max_size = self.config.get('MAX_PDF_SIZE', 3000000)
-        request.result = result = Result()
-        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
-            path = request.file_path
-            working_dir = self.working_directory
-
-            # CALL PDFID and identify all suspicious keyword streams
-            additional_keywords = self.config.get('ADDITIONAL_KEYS', [])
-            heur = deepcopy(self.config.get('HEURISTICS', []))
-            all_errors = set()
-
-            res_txt = "Main Document Results"
-            res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir,
-                                                             heur, additional_keywords)
-            result.add_section(res)
-
-            for e in errors:
-                all_errors.add(e)
-
-            #  ObjStms: Treat all ObjStms like a standalone PDF document
-            if contains_objstms:
-                objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
-                obj_cnt = 1
-                for osf in objstm_files:
-                    parent_obj = os.path.basename(osf).split("_")[1]
-                    res_txt = "ObjStream Object {0} from Parent Object {1}" .format(obj_cnt, parent_obj)
-                    # It is going to look suspicious as the service created the PDF
-                    heur = [x for x in heur if 'plugin_suspicious_properties' not in x
-                            and 'plugin_embeddedfile' not in x and 'plugin_nameobfuscation' not in x]
-
-                    res, contains_objstms, errors = self.analyze_pdf(request, res_txt, osf, working_dir, heur,
-                                                                     additional_keywords, get_malform=False)
-
-                    obj_cnt += 1
-                    result.add_section(res)
-
-            if len(all_errors) > 0:
-                erres = ResultSection(title_text="Errors Analyzing PDF")
-                for e in all_errors:
-                    erres.add_line(e)
-                result.add_section(erres)
-
-            more_res = self.additional_parsing(request.file_path)
-            if more_res:
-                result.add_section(more_res)
-
         else:
-            section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
-            section.set_heuristic(10)
-            result.add_section(section)
+            patterns = PatternMatch()
+            if urls:
+                body = '\n'.join(urls)
+                request.result.add_section(
+                    ResultSection('URL in Annotations',
+                                  body=body,
+                                  heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
+                                  tags=convert_tags(patterns.ioc_match(body.encode())))
+                )
+            if scripts:
+                all_scripts = b'\n'.join(scripts)
+                tags: dict[str, list[str]] = convert_tags(patterns.ioc_match(all_scripts))
+                heuristic = Heuristic(28)
+                if b'exportXFAData' in all_scripts:
+                    tags['attribution.exploit'] = ['CVE-2023-27363']
+                    heuristic.add_signature_id('foxit')
+                scripts_name = hashlib.sha256(all_scripts).hexdigest()[:8] + '_scripts.js'
+                scripts_path = os.path.join(self.working_directory, scripts_name)
+                try:
+                    with open(scripts_path, 'wb') as f:
+                        f.write(all_scripts)
+                    try:
+                        request.add_extracted(scripts_path, scripts_name, 'Scripts extracted from PDF streams.')
+                    except MaxExtractedExceeded:
+                        pass
+                except Exception as e:
+                    self.log.warning(f'Failed to write scripts file: {e}')
+                request.result.add_section(
+                    ResultSection('PDF Scripts', heuristic=heuristic, tags=tags)
+                )
+
+    def _get_annotation_urls(self, pdf: pikepdf.Pdf) -> set[str]:
+        urls = set()
+        for page in pdf.pages:
+            if '/Annots' not in page:
+                continue
+            for annot in page['/Annots'].as_list():
+                if annot.get('/Subtype') != '/Link' or '/A' not in annot:
+                    continue
+                _url = annot['/A'].get('/URI')
+                if not hasattr(_url, '__str__'):
+                    continue
+                url = str(_url)
+                if re.match(FULL_URI, url):
+                    urls.add(url)
+        return urls
+
+    def _get_scripts(self, pdf: pikepdf.Pdf) -> list[bytes]:
+        return list(chain.from_iterable(
+            re.findall(rb'(?s)<script\b[^>]*>([^<].*?)</script\s*>', _object.read_bytes())
+            for _object in pdf.objects if isinstance(_object, pikepdf.Stream)
+        ))
