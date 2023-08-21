@@ -911,7 +911,7 @@ class PDFId(ServiceBase):
     def _get_annotation_urls(self, data: bytes) -> set[str]:
         urls: set[str] = set()
         url: bytes
-        for url in re.findall(rb'/URL \(([^\)]+)\)', data):
+        for url in re.findall(rb'/URI \(([^)]+)\)', data):
             try:
                 url_string = url.decode('ascii')
             except UnicodeDecodeError:
