@@ -3,11 +3,10 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import zlib
 from collections.abc import Iterable
 from copy import deepcopy
-from itertools import chain
 
-import pikepdf
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
@@ -866,63 +865,57 @@ class PDFId(ServiceBase):
         return obj_files
 
     def additional_parsing(self, request: ServiceRequest) -> None:
-        try:
-            with pikepdf.open(request.file_path) as pdf:
-                num_pages = len(pdf.pages)
-                urls = self._get_annotation_urls(pdf)
-                scripts = self._get_scripts(pdf)
-        except Exception as e:
-            self.log.warning(f'pikepdf failed to parse sample: {e}')
-        else:
-            patterns = PatternMatch()
-            if urls:
-                body = '\n'.join(urls)
-                request.result.add_section(
-                    ResultSection('URL in Annotations',
-                                  body=body,
-                                  heuristic=Heuristic(27, signature='one_page' if num_pages == 1 else None),
-                                  tags=convert_tags(patterns.ioc_match(body.encode())))
-                )
-            if scripts:
-                all_scripts = b'\n'.join(scripts)
-                tags: dict[str, list[str]] = convert_tags(patterns.ioc_match(all_scripts))
-                heuristic = Heuristic(28)
-                if b'exportXFAData' in all_scripts:
-                    tags['attribution.exploit'] = ['CVE-2023-27363']
-                    heuristic.add_signature_id('foxit')
-                scripts_name = hashlib.sha256(all_scripts).hexdigest()[:8] + '_scripts.js'
-                scripts_path = os.path.join(self.working_directory, scripts_name)
-                try:
-                    with open(scripts_path, 'wb') as f:
-                        f.write(all_scripts)
-                    try:
-                        request.add_extracted(scripts_path, scripts_name, 'Scripts extracted from PDF streams.')
-                    except MaxExtractedExceeded:
-                        pass
-                except Exception as e:
-                    self.log.warning(f'Failed to write scripts file: {e}')
-                request.result.add_section(
-                    ResultSection('PDF Scripts', heuristic=heuristic, tags=tags)
-                )
+        streams = []
+        dictionary: bytes
+        stream_data: bytes
+        for dictionary, stream_data in re.findall(b'(?s)<<([^>]+)>>\nstream(.+?)endstream', request.file_contents):
+            if b'/Filter' not in dictionary:
+                streams.append(stream_data)
+            elif b'/FlateDecode' in dictionary:
+                streams.append(zlib.decompress(stream_data.strip(b'\r\n')))
+            else:  # TBD: Other encoding types
+                pass
+        all_streams = b''.join(streams)
+        urls = self._get_annotation_urls(all_streams)
+        scripts: list[bytes] = re.findall(rb'(?s)<script\b[^>]*>([^<].*?)</script\s*>', all_streams)
+        patterns = PatternMatch()
+        if urls:
+            body = '\n'.join(urls)
+            request.result.add_section(
+                ResultSection('URL in Annotations',
+                              body=body,
+                              heuristic=Heuristic(27),
+                              tags=convert_tags(patterns.ioc_match(body.encode())))
+            )
+        if scripts:
+            all_scripts = b'\n'.join(scripts)
+            tags: dict[str, list[str]] = convert_tags(patterns.ioc_match(all_scripts))
+            heuristic = Heuristic(28)
+            if b'exportXFAData' in all_scripts:
+                tags['attribution.exploit'] = ['CVE-2023-27363']
+                heuristic.add_signature_id('foxit')
+            scripts_name = hashlib.sha256(all_scripts).hexdigest()[:8] + '_scripts.js'
+            scripts_path = os.path.join(self.working_directory, scripts_name)
+            try:
+                with open(scripts_path, 'wb') as f:
+                    f.write(all_scripts)
+                request.add_extracted(scripts_path, scripts_name, 'Scripts extracted from PDF streams.')
+            except MaxExtractedExceeded:
+                pass
+            except Exception as e:
+                self.log.warning(f'Failed to write scripts file: {e}')
+            request.result.add_section(
+                ResultSection('PDF Scripts', heuristic=heuristic, tags=tags)
+            )
 
-    def _get_annotation_urls(self, pdf: pikepdf.Pdf) -> set[str]:
-        urls = set()
-        for page in pdf.pages:
-            if '/Annots' not in page:
+    def _get_annotation_urls(self, data: bytes) -> set[str]:
+        urls: set[str] = set()
+        url: bytes
+        for url in re.findall(rb'/URI \(([^)]+)\)', data):
+            try:
+                url_string = url.decode('ascii')
+            except UnicodeDecodeError:
                 continue
-            for annot in page['/Annots'].as_list():
-                if annot.get('/Subtype') != '/Link' or '/A' not in annot:
-                    continue
-                _url = annot['/A'].get('/URI')
-                if not hasattr(_url, '__str__'):
-                    continue
-                url = str(_url)
-                if re.match(FULL_URI, url):
-                    urls.add(url)
+            if re.match(FULL_URI, url_string):
+                urls.add(url_string)
         return urls
-
-    def _get_scripts(self, pdf: pikepdf.Pdf) -> list[bytes]:
-        return list(chain.from_iterable(
-            re.findall(rb'(?s)<script\b[^>]*>([^<].*?)</script\s*>', _object.read_bytes())
-            for _object in pdf.objects if isinstance(_object, pikepdf.Stream)
-        ))
