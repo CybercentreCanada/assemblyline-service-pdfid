@@ -865,14 +865,19 @@ class PDFId(ServiceBase):
         return obj_files
 
     def additional_parsing(self, request: ServiceRequest) -> None:
+        """Parses urls and scripts in streams"""
         streams = []
         dictionary: bytes
         stream_data: bytes
-        for dictionary, stream_data in re.findall(b'(?s)<<([^>]+)>>\nstream(.+?)endstream', request.file_contents):
+        for i, (dictionary, stream_data) in enumerate(
+                re.findall(b'(?s)<<([^>]+)>>\nstream(.+?)endstream', request.file_contents)):
             if b'/Filter' not in dictionary:
                 streams.append(stream_data)
-            elif b'/FlateDecode' in dictionary:
-                streams.append(zlib.decompress(stream_data.strip(b'\r\n')))
+            elif b'/Filter /FlateDecode' in dictionary:
+                try:
+                    streams.append(zlib.decompress(stream_data.strip(b'\r\n')))
+                except zlib.error as e:
+                    self.log.error(f"{request.sha256} stream {i} /FlateDecode failed: {e}")
             else:  # TBD: Other encoding types
                 pass
         all_streams = b''.join(streams)
