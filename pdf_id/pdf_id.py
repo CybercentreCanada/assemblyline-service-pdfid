@@ -257,7 +257,6 @@ class PDFId(ServiceBase):
                         # Filter out seemingly meaningless keywords
                     if ((not isinstance(v, dict) and int(v) > 1) or (isinstance(v, dict))) and len(k) > 2:
                         fres.add_line(f"{k}: {v}")
-                        fres.add_tag('file.string.extracted', k.replace("/", "", 1))
                     if k in additional_keywords:
                         triage_keywords.add(k.replace("/", "", 1))
 
