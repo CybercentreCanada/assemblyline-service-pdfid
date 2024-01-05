@@ -75,7 +75,7 @@ class PDFId(ServiceBase):
                 obj_cnt += 1
                 result.add_section(res)
 
-        if len(all_errors) > 0:
+        if all_errors:
             erres = ResultSection(title_text="Errors Analyzing PDF")
             for e in all_errors:
                 erres.add_line(e)
@@ -220,7 +220,7 @@ class PDFId(ServiceBase):
             raise NonRecoverableError(e)
         # Parse PDFId results
         pdfidres = ResultSection(title_text="PDFID Results", parent=res)
-        if len(pdfid_result) == 0:
+        if not pdfid_result:
             pdfidres.add_line("No results generated for file. Please see errors.")
         else:
             # Do not run for objstms, which are being analyzed when get_malform == False
@@ -263,7 +263,7 @@ class PDFId(ServiceBase):
             plugin = pdfid_result.get("Plugin", [])
 
             # If any plugin results, or flagged keywords found, run PDF Parser
-            if plugin or len(triage_keywords) > 0:
+            if plugin or triage_keywords:
                 run_pdfparse = True
 
             for pllist in plugin:
@@ -374,7 +374,7 @@ class PDFId(ServiceBase):
                 pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options)
 
                 if pdf_parser_result:
-                    if len(pdf_parser_result) == 0:
+                    if not pdf_parser_result:
                         pdf_parserres.add_line("No statistical results generated for file. Please see errors.")
                     else:
                         version = pdf_parser_result.get("version", None)
@@ -458,7 +458,7 @@ class PDFId(ServiceBase):
                                 continue
                         # If no content, then keyword likely points to reference objects, so grab those
                         if content == "":
-                            if len(references) > 0:
+                            if references:
                                 content = references
                             else:
                                 # Something is wrong, drop it.
@@ -559,12 +559,12 @@ class PDFId(ServiceBase):
 
             # Add carved content to result output
             show_content_of_interest = False
-            if len(carved_content) > 0 or len(jbig_objs) > 0:
+            if carved_content or jbig_objs:
                 carres = ResultSection(title_text="Content of Interest")
             else:
                 carres = None
 
-            if len(jbig_objs) > 0:
+            if jbig_objs:
                 jbigres = ResultSection(
                     title_text="The following Object IDs are JBIG2DECODE streams:",
                     body_format=BODY_FORMAT.MEMORY_DUMP,
@@ -573,7 +573,7 @@ class PDFId(ServiceBase):
                 jbigres.add_line(", ".join(map(str, jbig_objs)))
                 show_content_of_interest = True
 
-            if len(carved_content) > 0:
+            if carved_content:
                 carved_obj_size_limit = int(request.get_param("carved_obj_size_limit"))
                 for k, l in sorted(carved_content.items()):
                     for d in l:
@@ -588,7 +588,7 @@ class PDFId(ServiceBase):
                                 # Check for IOC content
                                 patterns = PatternMatch()
                                 st_value = patterns.ioc_match(con_bytes, bogon_ip=True)
-                                if len(st_value) > 0:
+                                if st_value:
                                     carres.add_subsection(subres)
                                     show_content_of_interest = True
                                     for ty, val in st_value.items():
@@ -645,7 +645,7 @@ class PDFId(ServiceBase):
 
                 embed_extracted = set()
                 if pdf_parser_result:
-                    if len(pdf_parser_result) == 0:
+                    if not pdf_parser_result:
                         pdf_parserres.add_line("No structure information generated for file. Please see errors.")
                     else:
                         # PDF Parser will write any malformed content over 100 bytes to a file
@@ -653,7 +653,7 @@ class PDFId(ServiceBase):
                         if files:
                             for f, l in files.items():
                                 if f == "malformed":
-                                    if len(l) > 0:
+                                    if l:
                                         pdf_parserres.set_heuristic(6)
                                     for i in l:
                                         try:
@@ -678,7 +678,7 @@ class PDFId(ServiceBase):
                 # Extract objects collected from above analysis
                 obj_to_extract = obj_extract_triage - embed_extracted - jbig_objs
 
-                if len(obj_to_extract) > 0:
+                if obj_to_extract:
                     options = {
                         "filter": True,
                         "object": obj_to_extract,
@@ -754,7 +754,7 @@ class PDFId(ServiceBase):
                             jbig_extract_res.set_heuristic(9)
                             jbig_extract_res.add_lines(extracted_jb)
 
-            if len(pdf_parserres.subsections) > 0:
+            if pdf_parserres.subsections:
                 res.add_subsection(pdf_parserres)
 
         return res, objstms, all_errors
