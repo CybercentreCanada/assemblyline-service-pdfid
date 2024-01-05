@@ -198,7 +198,7 @@ class PDFId(ServiceBase):
         heur,
         additional_keywords,
         get_malform=True,
-    ) -> tuple[ResultSection, bool, set]:
+    ) -> tuple[ResultSection, bool, set[str]]:
         """Extract metadata, keyword objects and content of interest from a PDF sample using PDFId, PDFId plugins,
         and PDF Parser.
 
@@ -215,7 +215,7 @@ class PDFId(ServiceBase):
             AL result object, AL heuristics list to add to result, list of object streams (objstms), and an errors list.
         """
         triage_keywords = set()
-        all_errors = set()
+        all_errors: set[str] = set()
         embed_present = False
         objstms = False
         res = ResultSection(title_text=res_txt)
@@ -400,8 +400,7 @@ class PDFId(ServiceBase):
                             )
                             for p in stats:
                                 sres.add_line(p)
-                    for e in errors:
-                        all_errors.add(e)
+                    all_errors.update(errors)
 
             # Triage plugin -- search sample for keywords and carve content or extract object (if it contains a stream)
             carved_content = {}  # Format { "objnum": [{keyword: content list}}
@@ -567,8 +566,7 @@ class PDFId(ServiceBase):
                                     else:
                                         carved_content[objnum] = [{keyword: c}]
 
-                    for e in errors:
-                        all_errors.add(e)
+                    all_errors.update(errors)
 
             # Add carved content to result output
             show_content_of_interest = False
@@ -718,8 +716,7 @@ class PDFId(ServiceBase):
                                                 extracted_files.append(f"Extracted object {obj_id} as {f_name}")
                                         except MaxExtractedExceeded:
                                             break
-                        for e in errors:
-                            all_errors.add(e)
+                        all_errors.update(errors)
 
                         if extracted_files:
                             extract_res = ResultSection(title_text="Extracted embedded objects", parent=pdf_parserres)
@@ -757,8 +754,7 @@ class PDFId(ServiceBase):
                                         except MaxExtractedExceeded:
                                             break
 
-                        for e in errors:
-                            all_errors.add(e)
+                        all_errors.update(errors)
 
                         if extracted_jb:
                             jbig_extract_res = ResultSection(
