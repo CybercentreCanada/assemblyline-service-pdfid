@@ -12,8 +12,9 @@ from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.request import MaxExtractedExceeded, ServiceRequest
+from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
@@ -24,10 +25,10 @@ def convert_tags(tags: dict[str, Iterable[bytes]]) -> dict[str, list[str]]:
 
 
 class PDFId(ServiceBase):
-    def __init__(self, config=None):
+    def __init__(self, config: dict | None = None) -> None:
         super(PDFId, self).__init__(config)
 
-    def execute(self, request):
+    def execute(self, request: ServiceRequest) -> None:
         """Main Module. See README for details."""
         max_size = self.config.get("MAX_PDF_SIZE", 3000000)
         request.result = result = Result()
@@ -85,7 +86,7 @@ class PDFId(ServiceBase):
         self.additional_parsing(request)
 
     @staticmethod
-    def get_pdfid(path, additional_keywords, plugins, deep):
+    def get_pdfid(path, additional_keywords, plugins, deep: bool):
         """Run PDFId code on sample.
 
         Args:
@@ -185,7 +186,16 @@ class PDFId(ServiceBase):
         return pdf_parser_statresult, errors
 
     # noinspection PyBroadException
-    def analyze_pdf(self, request, res_txt, path, working_dir, heur, additional_keywords, get_malform=True):
+    def analyze_pdf(
+        self,
+        request: ServiceRequest,
+        res_txt: str,
+        path: str,
+        working_dir: str,
+        heur,
+        additional_keywords,
+        get_malform=True,
+    ) -> tuple[ResultSection, bool, set]:
         """Extract metadata, keyword objects and content of interest from a PDF sample using PDFId, PDFId plugins,
         and PDF Parser.
 
@@ -759,7 +769,7 @@ class PDFId(ServiceBase):
 
         return res, objstms, all_errors
 
-    def write_objstm(self, path, working_dir, objstm, objstm_path):
+    def write_objstm(self, path: str, working_dir: str, objstm: str, objstm_path: str):
         """Write object stream (objstm) to file as a mock PDF.
 
         Args:
@@ -783,7 +793,7 @@ class PDFId(ServiceBase):
             "filter": True,
             "raw": True,
         }
-        pdf_parser_subresult, err = self.get_pdf_parser(path, working_dir, options)
+        pdf_parser_subresult, _ = self.get_pdf_parser(path, working_dir, options)
 
         if pdf_parser_subresult:
             for sub_p in pdf_parser_subresult["parts"]:
@@ -834,7 +844,7 @@ class PDFId(ServiceBase):
 
         return objstm_file
 
-    def analyze_objstm(self, path, working_dir, deep_scan):
+    def analyze_objstm(self, path: str, working_dir: str, deep_scan: bool) -> set:
         """Extract object streams (objstm) from PDF sample and write to file as a mock PDF.
 
         Args:
@@ -845,36 +855,29 @@ class PDFId(ServiceBase):
         Returns:
             List of extracted objstm file paths.
         """
-        objstm_extracted = set()
+        objstm_extracted: set[str] = set()
 
         obj_files = set()
 
         # Only extract first 2 if not deep scan
-        if deep_scan:
-            max_obst = 100
-        else:
-            max_obst = 1  # Really 2
+        max_obst = 100 if deep_scan else 1  # Really 2
+
         options_objstm = {"elements": "i", "type": "/ObjStm", "max_objstm": max_obst}
 
-        pdf_parser_result, errors = self.get_pdf_parser(path, working_dir, options_objstm)
-        if pdf_parser_result is None:
-            parts = None
-        else:
-            parts = pdf_parser_result.get("parts", None)
+        pdf_parser_result, _ = self.get_pdf_parser(path, working_dir, options_objstm)
+        parts = pdf_parser_result.get("parts", None) if pdf_parser_result else None
 
-        if parts:
-            idx = 0
-            for p in sorted(parts):
-                if "Type: /ObjStm" in p:
-                    getobj = p.split("\n", 1)[0].split(" ")[1]
-                    if getobj in objstm_extracted:
-                        continue
-                    dump_file = os.path.join(self.working_directory, f"objstm_{getobj}_{idx}")
-                    idx += 1
-                    obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
-                    if obj_file:
-                        objstm_extracted.add(getobj)
-                        obj_files.add(obj_file)
+        idx = 0
+        for p in sorted(p for p in parts if "Type: /ObjStm" in p):
+            getobj = p.split("\n", 1)[0].split(" ")[1]
+            if getobj in objstm_extracted:
+                continue
+            dump_file = os.path.join(self.working_directory, f"objstm_{getobj}_{idx}")
+            idx += 1
+            obj_file = self.write_objstm(path, working_dir, getobj, dump_file)
+            if obj_file:
+                objstm_extracted.add(getobj)
+                obj_files.add(obj_file)
 
         return obj_files
 
