@@ -370,10 +370,10 @@ class PDFId(ServiceBase):
                         if lineres.heuristic is not None:
                             pdfidres.add_subsection(lineres)
 
-        for e in errors:
-            all_errors.add(e)
-            if e.startswith("Error running plugin"):
-                self.log.warn(e)
+        for err in errors:
+            all_errors.add(err)
+            if err.startswith("Error running plugin"):
+                self.log.warn(err)
 
         if run_pdfparse:
             # CALL PDF parser and extract further information
@@ -468,10 +468,11 @@ class PDFId(ServiceBase):
                             except Exception as e:
                                 self.log.debug(e)
                                 continue
+                        content_keywords: list[str]
                         # If no content, then keyword likely points to reference objects, so grab those
                         if content == "":
                             if references:
-                                content = references
+                                content_keywords = references
                             else:
                                 # Something is wrong, drop it.
                                 continue
@@ -480,7 +481,7 @@ class PDFId(ServiceBase):
                                 # Multiple references might be in a list, i.e. /Annot # # R vs. /Annots [# # R # # R]
                                 islist = re.match(r"[s]?[ ]?\[([0-9]* [0-9]* R[ \\rn]{0,8})*\]", content)
                                 if islist:
-                                    content = re.sub(
+                                    content_keywords = re.sub(
                                         r"[\[\]]", "", islist.group(0).replace("s ", "").replace("R ", "R,")
                                     ).split(",")
                                     break
@@ -490,11 +491,11 @@ class PDFId(ServiceBase):
                                     content,
                                 )
                                 if withinst:
-                                    content = [withinst.group(1)]
+                                    content_keywords = [withinst.group(1)]
                                     break
-                                content = [content]
+                                content_keywords = [content]
                                 break
-                        for c in content:
+                        for c in content_keywords:
                             # If keyword = Javascript and content starts with '/JS', disregard as 'JS' will be extracted
                             if "JS" in triage_keywords and keyword == "JavaScript" and "/JS" in c[0:5]:
                                 continue
@@ -502,7 +503,7 @@ class PDFId(ServiceBase):
                                 try:
                                     ref_obj = c.split(" ", 1)[0]
                                     options = {"object": ref_obj, "get_object_detail": True}
-                                    pdf_parser_subresult, err = self.get_pdf_parser(path, working_dir, options)
+                                    pdf_parser_subresult, suberrors = self.get_pdf_parser(path, working_dir, options)
 
                                     if pdf_parser_subresult:
                                         for sub_p in pdf_parser_subresult["parts"]:
@@ -542,8 +543,7 @@ class PDFId(ServiceBase):
                                                 except Exception:
                                                     continue
 
-                                    for e in err:
-                                        errors.add(e)
+                                    errors.update(suberrors)
                                 except Exception:
                                     # If none of that work, just extract the original object for examination.
                                     try:
