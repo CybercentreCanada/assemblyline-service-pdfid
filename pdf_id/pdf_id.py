@@ -6,6 +6,7 @@ import re
 import zlib
 from collections.abc import Iterable
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.exceptions import NonRecoverableError
@@ -18,6 +19,9 @@ from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 def convert_tags(tags: dict[str, Iterable[bytes]]) -> dict[str, list[str]]:
@@ -50,8 +54,7 @@ class PDFId(ServiceBase):
         res, contains_objstms, errors = self.analyze_pdf(request, res_txt, path, working_dir, heur, additional_keywords)
         result.add_section(res)
 
-        for e in errors:
-            all_errors.add(e)
+        all_errors.update(errors)
 
         #  ObjStms: Treat all ObjStms like a standalone PDF document
         if contains_objstms:
@@ -134,7 +137,7 @@ class PDFId(ServiceBase):
 
         return pdfid_result_dict, errors
 
-    def get_pdf_parser(self, path, working_dir, options):
+    def get_pdf_parser(self, path: str, working_dir: str, options: dict[str, Any]) -> tuple[dict[str, Any], set[str]]:
         """Run PDF Parser code on sample.
 
         Args:
