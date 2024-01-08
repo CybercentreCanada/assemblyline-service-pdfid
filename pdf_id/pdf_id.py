@@ -768,7 +768,7 @@ class PDFId(ServiceBase):
 
         return res, objstms, all_errors
 
-    def write_objstm(self, path: str, working_dir: str, objstm: str, objstm_path: str):
+    def write_objstm(self, path: str, working_dir: str, objstm: str, objstm_path: str) -> str | None:
         """Write object stream (objstm) to file as a mock PDF.
 
         Args:
@@ -794,55 +794,55 @@ class PDFId(ServiceBase):
         }
         pdf_parser_subresult, _ = self.get_pdf_parser(path, working_dir, options)
 
-        if pdf_parser_subresult:
-            for sub_p in pdf_parser_subresult["parts"]:
-                if len(sub_p.split("\n", 4)) >= 4 and sub_p.split("\n", 4)[3] == "Contains stream":
-                    stream_present = True
-                    break
-            if stream_present:
-                files = pdf_parser_subresult.get("files", None)
-                if files:
-                    for fi, l in files.items():
-                        if fi == "embedded" and len(l) > 0:
-                            objstm_file = l[0]
-                            with open(objstm_file, "rb+") as f:
-                                stream = f.read()
-                                # Remove any extra content before objects
-                                if not stream.startswith(b"<<"):
-                                    object_start = stream.find(b"<")
-                                    if object_start < 0:
-                                        object_start = len(stream)
-                                    stream = b"%" + stream[:object_start] + b"\x0A" + stream[object_start:]
-                                obj_idx = 1
-                                # Find all labels and surround them with obj headers
-                                for lab in re.findall(rb"(<<[^\n]*>>[\x0A\x0D]|<<[^\n]*>>$)", stream):
-                                    stream = stream.replace(
-                                        lab,
-                                        str(obj_idx).encode()
-                                        + b" 0 obj\r"
-                                        + b"".join(lab.rsplit(b"\n", 1))
-                                        + obj_footer,
-                                    )
-                                    obj_idx += 1
-                                # Find all streams and surround them wirh stream headers
-                                for ste in re.findall(rb">>(?:(?!stream)(?![\r\n]endobj)[^<])+", stream):
-                                    # Might be multi-layer stream:
-                                    if ste.endswith(b">>"):
-                                        continue
-                                    stream = stream.replace(
-                                        ste, b">>stream\n" + ste.replace(b">>", b"", 1) + b"\nendstream\rendobj\r"
-                                    )
-                                # Find all labels with attached stream, and surround them with obj headers
-                                for lab_ste in re.findall(
-                                    rb"(?:(?:(?!obj)...)|(?:endobj))([\r\n]<<(?:(?!endobj).)+)", stream, re.DOTALL
-                                ):
-                                    stream = stream.replace(
-                                        lab_ste, b"\r" + str(obj_idx).encode() + b" 0 obj\r" + lab_ste[2:]
-                                    )
-                                    obj_idx += 1
-                                f.seek(0, 0)
-                                f.write(header + stream + trailer)
+        if not pdf_parser_subresult:
+            return None
 
+        for sub_p in pdf_parser_subresult["parts"]:
+            if len(sub_p.split("\n", 4)) >= 4 and sub_p.split("\n", 4)[3] == "Contains stream":
+                stream_present = True
+                break
+        if not stream_present:
+            return None
+
+        files = pdf_parser_subresult.get("files", None)
+        if not files:
+            return None
+        for fi, l in files.items():
+            if fi != "embedded" or len(l) == 0:
+                continue
+            objstm_file = l[0]
+            with open(objstm_file, "rb+") as f:
+                stream = f.read()
+                # Remove any extra content before objects
+                if not stream.startswith(b"<<"):
+                    object_start = stream.find(b"<")
+                    if object_start < 0:
+                        object_start = len(stream)
+                    stream = b"%" + stream[:object_start] + b"\x0A" + stream[object_start:]
+                obj_idx = 1
+                # Find all labels and surround them with obj headers
+                for lab in re.findall(rb"(<<[^\n]*>>[\x0A\x0D]|<<[^\n]*>>$)", stream):
+                    stream = stream.replace(
+                        lab,
+                        str(obj_idx).encode() + b" 0 obj\r" + b"".join(lab.rsplit(b"\n", 1)) + obj_footer,
+                    )
+                    obj_idx += 1
+                # Find all streams and surround them wirh stream headers
+                for ste in re.findall(rb">>(?:(?!stream)(?![\r\n]endobj)[^<])+", stream):
+                    # Might be multi-layer stream:
+                    if ste.endswith(b">>"):
+                        continue
+                    stream = stream.replace(ste, b">>stream\n" + ste.replace(b">>", b"", 1) + b"\nendstream\rendobj\r")
+                # Find all labels with attached stream, and surround them with obj headers
+                for lab_ste in re.findall(
+                    rb"(?:(?:(?!obj)...)|(?:endobj))([\r\n]<<(?:(?!endobj).)+)", stream, re.DOTALL
+                ):
+                    stream = stream.replace(lab_ste, b"\r" + str(obj_idx).encode() + b" 0 obj\r" + lab_ste[2:])
+                    obj_idx += 1
+                f.seek(0, 0)
+                f.write(header + stream + trailer)
+        # TODO: We set objstm_file in a for loop but only return it's last value.
+        #       Is it only ever set once? or is this a logic error?
         return objstm_file
 
     def analyze_objstm(self, path: str, working_dir: str, deep_scan: bool) -> set:
