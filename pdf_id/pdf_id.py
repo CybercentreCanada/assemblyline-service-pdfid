@@ -808,9 +808,11 @@ class PDFId(ServiceBase):
                             with open(objstm_file, "rb+") as f:
                                 stream = f.read()
                                 # Remove any extra content before objects
-                                if not re.match(b"<<.*", stream):
-                                    extra_content = re.match(rb"[^<]*", stream).group(0)
-                                    stream = stream.replace(extra_content, b"%" + extra_content + b"\x0A")
+                                if not stream.startswith(b"<<"):
+                                    object_start = stream.find(b"<")
+                                    if object_start < 0:
+                                        object_start = len(stream)
+                                    stream = b"%" + stream[:object_start] + b"\x0A" + stream[object_start:]
                                 obj_idx = 1
                                 # Find all labels and surround them with obj headers
                                 for lab in re.findall(rb"(<<[^\n]*>>[\x0A\x0D]|<<[^\n]*>>$)", stream):
