@@ -1,0 +1,69 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 0,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Main Document Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDFiD Version 0.2.8 ",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDFID Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDF Header: %PDF-1.7\nobj: 25\nendobj: 25\nstream: 7\nendstream: 7\nxref: 4\ntrailer: 4\nstartxref: 4",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Properties",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "/Page: 2\n/02: 2\n/1999: 2\n/22: 2\n/Action: 2\n/BCDEEE: 2\n/BM: 2\n/CS: 2\n/Catalog: 2\n/Contents: 2\n/CreationDate: 2\n/Creator: 2\n/DeviceRGB: 2\n/ExtGState: 4\n/F1: 3\n/Filter: 5\n/FlateDecode: 5\n/Font: 3\n/FontDescriptor: 2\n/GS7: 2\n/GS8: 2\n/Group: 4\n/ID: 5\n/ImageB: 2\n/ImageC: 2\n/ImageI: 2\n/Info: 5\n/Lang: 2\n/Length: 7\n/MarkInfo: 2\n/Marked: 2\n/MediaBox: 2\n/Metadata: 4\n/ModDate: 2\n/Names: 2\n/Normal: 2\n/PDF: 2\n/Pages: 3\n/Parent: 2\n/Prev: 3\n/ProcSet: 2\n/Resources: 2\n/Root: 5\n/Size: 6\n/StructParents: 2\n/StructTreeRoot: 2\n/Subtype: 4\n/Tabs: 2\n/Text: 2\n/Transparency: 2\n/Type: 18\n/ViewerPreferences: 2\n/XML: 2\n/application/pdf: {'1': '1'}\n/dc: 4\n/elements: 2\n/mm: 2\n/ns: 5\n/purl: 2\n/rdf: 13\n/www: 2\n/xap: 4\n/xmp: 6\n/xmpMM: 4",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Keyword Flags (Count)",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [],
+    "tags": {},
+    "temp_submission_data": {}
+  }
+}
