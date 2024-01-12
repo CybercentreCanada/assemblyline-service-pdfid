@@ -36,7 +36,7 @@ class PDFId(ServiceBase):
         """Main Module. See README for details."""
         max_size = self.config.get("MAX_PDF_SIZE", 3000000)
         request.result = result = Result()
-        if (os.path.getsize(request.file_path) or 0) < max_size or request.deep_scan:
+        if (os.path.getsize(request.file_path) or 0) >= max_size and not request.deep_scan:
             section = ResultSection("PDF Analysis of the file was skipped because the file is too big (limit is 3 MB).")
             section.set_heuristic(10)
             result.add_section(section)
