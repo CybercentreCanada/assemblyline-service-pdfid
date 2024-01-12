@@ -214,7 +214,7 @@ class PDFId(ServiceBase):
         Returns:
             AL result object, AL heuristics list to add to result, list of object streams (objstms), and an errors list.
         """
-        triage_keywords = set()
+        triage_keywords: set[str] = set()
         all_errors: set[str] = set()
         embed_present = False
         objstms = False
@@ -403,7 +403,9 @@ class PDFId(ServiceBase):
                     all_errors.update(errors)
 
             # Triage plugin -- search sample for keywords and carve content or extract object (if it contains a stream)
-            carved_content = {}  # Format { "objnum": [{keyword: content list}}
+            carved_content: dict[
+                str, list[dict[str, dict[str, Any]]]
+            ] = {}  # Format { "objnum": [{keyword: content list}}
             obj_extract_triage = set()
             jbig_objs = set()
 
@@ -586,10 +588,10 @@ class PDFId(ServiceBase):
 
             if carved_content:
                 carved_obj_size_limit = int(request.get_param("carved_obj_size_limit"))
-                for k, l in sorted(carved_content.items()):
-                    for d in l:
+                for objnum, objlist in sorted(carved_content.items()):
+                    for d in objlist:
                         for keyw, con in d.items():
-                            subres = ResultSection(title_text=f"Object {k}: Hits for Keyword '{keyw}':")
+                            subres = ResultSection(title_text=f"Object {objnum}: Hits for Keyword '{keyw}':")
                             subres.set_heuristic(8)
 
                             con_bytes = con.encode()
