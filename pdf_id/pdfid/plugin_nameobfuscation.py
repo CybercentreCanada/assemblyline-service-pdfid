@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-#2013/11/04
-#2013/11/08
+# 2013/11/04
+# 2013/11/08
+
 
 class cPDFiDNameObfuscation(cPluginParent):
-#    onlyValidPDF = True
-    name = 'Name Obfuscation plugin'
+    #    onlyValidPDF = True
+    name = "Name Obfuscation plugin"
 
     def __init__(self, oPDFiD, options):
         self.oPDFiD = oPDFiD
@@ -15,5 +16,6 @@ class cPDFiDNameObfuscation(cPluginParent):
             return 1.0
         else:
             return 0.0
+
 
 AddPlugin(cPDFiDNameObfuscation)
