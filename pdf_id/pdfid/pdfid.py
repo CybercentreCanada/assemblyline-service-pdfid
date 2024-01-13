@@ -2,6 +2,7 @@
 """
 Modified by CSE to fit ASSEMBLYLINE service
 """
+from __future__ import annotations
 
 import collections
 import configparser as ConfigParser
@@ -18,6 +19,12 @@ import traceback
 import urllib.request as urllib23
 import xml.dom.minidom
 import zipfile
+from typing import TYPE_CHECKING, overload
+
+if TYPE_CHECKING:
+    from typing import IO, Iterable, MutableSequence
+
+    from typing_extensions import Buffer
 
 # Editted, These are the conditional imports for python2/3, we only use pythton 3
 from io import BytesIO as DataIO
@@ -87,13 +94,14 @@ Todo:
 
 
 # Convert 2 Bytes If Python 3
-def C2BIP3(string):
+def C2BIP3(string: bytes) -> str:
     # Edited, we only use python3 and using decode is much faster than the original list comprehension
     return string.decode("latin-1")
 
 
 class cBinaryFile:
-    def __init__(self, file, data=None):
+    def __init__(self, file: str, data: Buffer | None = None) -> None:
+        self.infile: IO[bytes]
         self.file = file
         if data is not None:
             self.infile = DataIO(data)
@@ -113,7 +121,7 @@ class cBinaryFile:
         elif file.lower().endswith(".zip"):
             try:
                 self.zipfile = zipfile.ZipFile(file, "r")
-                self.infile = self.zipfile.open(self.zipfile.infolist()[0], "r", C2BIP3("infected"))
+                self.infile = self.zipfile.open(self.zipfile.infolist()[0], "r", b"infected")
             except Exception:
                 print("Error opening file %s" % file)
                 print(sys.exc_info()[1])
@@ -125,18 +133,18 @@ class cBinaryFile:
                 print("Error opening file %s" % file)
                 print(sys.exc_info()[1])
                 sys.exit()
-        self.ungetted = []
+        self.ungetted: list[int] = []
 
-    def byte(self):
+    def byte(self) -> int | None:
         if len(self.ungetted) != 0:
             return self.ungetted.pop()
         inbyte = self.infile.read(1)
-        if not inbyte or inbyte == "":
+        if not inbyte or inbyte == b"":
             self.infile.close()
             return None
         return ord(inbyte)
 
-    def bytes(self, size):
+    def bytes(self, size: int) -> list[int]:
         if size <= len(self.ungetted):
             result = self.ungetted[0:size]
             del self.ungetted[0:size]
@@ -149,19 +157,19 @@ class cBinaryFile:
         self.ungetted = []
         return result
 
-    def unget(self, byte):
+    def unget(self, byte: int) -> None:
         self.ungetted.append(byte)
 
-    def ungets(self, bytes):
+    def ungets(self, bytes: MutableSequence[int]) -> None:
         bytes.reverse()
         self.ungetted.extend(bytes)
 
 
 class cPDFDate:
-    def __init__(self):
+    def __init__(self) -> None:
         self.state = 0
 
-    def parse(self, char):
+    def parse(self, char: str) -> str | None:
         if char == "D":
             self.state = 1
             return None
@@ -223,9 +231,10 @@ class cPDFDate:
                 else:
                     self.state = 0
                     return None
+        return None
 
 
-def fEntropy(countByte, countTotal):
+def fEntropy(countByte: int, countTotal: int) -> float:
     x = float(countByte) / countTotal
     if x > 0:
         return -x * math.log(x, 2)
@@ -234,20 +243,20 @@ def fEntropy(countByte, countTotal):
 
 
 class cEntropy:
-    def __init__(self):
+    def __init__(self) -> None:
         self.allBucket = [0 for i in range(0, 256)]
         self.streamBucket = [0 for i in range(0, 256)]
 
-    def add(self, byte, insideStream):
+    def add(self, byte: int, insideStream: object) -> None:
         self.allBucket[byte] += 1
         if insideStream:
             self.streamBucket[byte] += 1
 
-    def removeInsideStream(self, byte):
+    def removeInsideStream(self, byte: int) -> None:
         if self.streamBucket[byte] > 0:
             self.streamBucket[byte] -= 1
 
-    def calc(self):
+    def calc(self) -> tuple[int, float, int, float | None, int, float]:
         self.nonStreamBucket = map(operator.sub, self.allBucket, self.streamBucket)
         allCount = sum(self.allBucket)
         streamCount = sum(self.streamBucket)
@@ -273,11 +282,12 @@ class cEntropy:
 
 
 class cPDFEOF:
-    def __init__(self):
+    def __init__(self) -> None:
         self.token = ""
         self.cntEOFs = 0
+        self.cntCharsAfterLastEOF = 0
 
-    def parse(self, char):
+    def parse(self, char: str) -> None:
         if self.cntEOFs > 0:
             self.cntCharsAfterLastEOF += 1
         if self.token == "" and char == "%":
@@ -311,7 +321,7 @@ class cPDFEOF:
             self.token = ""
 
 
-def FindPDFHeaderRelaxed(oBinaryFile):
+def FindPDFHeaderRelaxed(oBinaryFile: cBinaryFile) -> tuple[list[int], str | None]:
     bytes = oBinaryFile.bytes(1024)
     index = "".join([chr(byte) for byte in bytes]).find("%PDF")
     if index == -1:
@@ -324,21 +334,31 @@ def FindPDFHeaderRelaxed(oBinaryFile):
     return (bytes[0:endHeader], "".join([chr(byte) for byte in bytes[index:endHeader]]))
 
 
-def Hexcode2String(char):
-    if type(char) == int:
+def Hexcode2String(char: int | str) -> str:
+    if isinstance(char, int):
         return "#%02x" % char
     else:
         return char
 
 
+@overload
+def SwapCase(char: int) -> int:
+    ...
+
+
+@overload
+def SwapCase(char: str) -> str:
+    ...
+
+
 def SwapCase(char):
-    if type(char) == int:
+    if isinstance(char, int):
         return ord(chr(char).swapcase())
     else:
         return char.swapcase()
 
 
-def HexcodeName2String(hexcodeName):
+def HexcodeName2String(hexcodeName: Iterable[int | str]) -> str:
     return "".join(map(Hexcode2String, hexcodeName))
 
 
