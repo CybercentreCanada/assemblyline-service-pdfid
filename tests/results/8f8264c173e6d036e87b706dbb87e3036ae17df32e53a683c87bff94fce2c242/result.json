@@ -1,0 +1,180 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 0,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Main Document Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDFiD Version 0.2.8 ",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDFID Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDF Header: %PDF-1.5\nobj: 7\nendobj: 7\nstream: 5\nendstream: 5\nxref: 0\ntrailer: 0\nstartxref: 1",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Properties",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "/XObject: 2\n/1.5: {'1': '1'}\n/BBox: 2\n/Filter: 5\n/FlateDecode: 4\n/Length: 5\n/Matrix: 2\n/Resources: 2\n/Subtype: 2\n/Type: 5",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Keyword Flags (Count)",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Parser Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Comment: 3\nXREF: 0\nTrailer: 0\nStartXref: 1\nIndirect object: 7\n  2: 39, 48\n /Catalog 1: 2\n /ObjStm 1: 1\n /XObject 2: 37, 46\n /XRef 1: 49\n /OpenAction 1: 2\n /AcroForm 1: 2",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Statistcs",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Content of Interest",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Content over 750 bytes it will be extracted for analysis\nName: carved_content_obj_37_5f004d4 - SHA256: 5f004d48c1eb0933461a4ceae1df258c2388c9adeed6e132cff77e820c1710dc",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 3,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 8,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Object 37: Hits for Keyword 'XObject':",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "https://bit.ly/newbookingupdates",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 27,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {
+          "network": {
+            "static": {
+              "uri": [
+                "https://bit.ly/newbookingupdates"
+              ]
+            }
+          }
+        },
+        "title_text": "URL in Annotations",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [
+      {
+        "name": "carved_content_obj_37_5f004d4",
+        "sha256": "5f004d48c1eb0933461a4ceae1df258c2388c9adeed6e132cff77e820c1710dc"
+      }
+    ],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 8,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 27,
+        "signatures": []
+      }
+    ],
+    "tags": {
+      "network.static.uri": [
+        {
+          "heur_id": 27,
+          "signatures": [],
+          "value": "https://bit.ly/newbookingupdates"
+        }
+      ]
+    },
+    "temp_submission_data": {}
+  }
+}
