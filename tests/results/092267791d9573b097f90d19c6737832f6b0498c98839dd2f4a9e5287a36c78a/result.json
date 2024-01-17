@@ -1,0 +1,197 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 0,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Main Document Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDFiD Version 0.2.8 ",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDFID Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDF Header: %PDF-1.7\nobj: 13\nendobj: 13\nstream: 3\nendstream: 3\nxref: 1\ntrailer: 1\nstartxref: 1",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Properties",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "/URI: 2\n/XObject: 3\n/BaseFont: 2\n/BitsPerComponent: 4\n/ColorSpace: 2\n/Colors: 2\n/Columns: 2\n/Count: 2\n/DecodeParms: 2\n/Encoding: 2\n/F1: 2\n/F2: 2\n/Filter: 3\n/FlateDecode: 3\n/Font: 3\n/Height: 2\n/Image: 2\n/Length: 3\n/MediaBox: 2\n/Name: 2\n/Outlines: 2\n/Pages: 2\n/Predictor: 2\n/Subtype: 5\n/Times: 2\n/Type: 10\n/Type1: 2\n/Width: 2\n/WinAnsiEncoding: 2",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Keyword Flags (Count)",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Parser Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Comment: 2\nXREF: 1\nTrailer: 1\nStartXref: 1\nIndirect object: 13\n  3: 4, 5, 7\n /Action 1: 13\n /Annot 1: 12\n /Catalog 1: 1\n /Font 2: 8, 9\n /Outlines 1: 2\n /Page 1: 6\n /Pages 1: 3\n /XObject 2: 10, 11\n /URI 1: 13",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Statistcs",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Content of Interest",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Content over 750 bytes it will be extracted for analysis\nName: carved_content_obj_10_87fe2a9 - SHA256: 87fe2a9a703dca222b20eaecf458a72f5d85560d90b07b2389eab3e28ec59c88",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 3,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 8,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Object 10: Hits for Keyword 'XObject':",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Content over 750 bytes it will be extracted for analysis\nName: carved_content_obj_11_08864c8 - SHA256: 08864c8036bf06af78ed70cb23e049567e589417f6bb8255d1dd981b664921b4",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 3,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 8,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Object 11: Hits for Keyword 'XObject':",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Content over 750 bytes it will be extracted for analysis\nName: carved_content_obj_3_9a435e7 - SHA256: 9a435e710b6e4609c1a7ef7961f3194dfdccb1b6ef3f7d053dd4e3ee0a80e3ba",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 3,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 8,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Object 3: Hits for Keyword 'XObject':",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [
+      {
+        "name": "carved_content_obj_11_08864c8",
+        "sha256": "08864c8036bf06af78ed70cb23e049567e589417f6bb8255d1dd981b664921b4"
+      },
+      {
+        "name": "carved_content_obj_10_87fe2a9",
+        "sha256": "87fe2a9a703dca222b20eaecf458a72f5d85560d90b07b2389eab3e28ec59c88"
+      },
+      {
+        "name": "carved_content_obj_3_9a435e7",
+        "sha256": "9a435e710b6e4609c1a7ef7961f3194dfdccb1b6ef3f7d053dd4e3ee0a80e3ba"
+      }
+    ],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 8,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 8,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 8,
+        "signatures": []
+      }
+    ],
+    "tags": {},
+    "temp_submission_data": {}
+  }
+}
