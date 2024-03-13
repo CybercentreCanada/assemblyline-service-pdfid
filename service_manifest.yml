@@ -16,6 +16,7 @@ disable_cache: false
 enabled: true
 is_external: false
 licence_count: 0
+privileged: true
 
 submission_params:
   - default: 750
@@ -206,4 +207,4 @@ heuristics:
 docker_config:
   image: ${REGISTRY}cccs/assemblyline-service-pdfid:$SERVICE_TAG
   cpu_cores: 1
-  ram_mb: 256
+  ram_mb: 2048
