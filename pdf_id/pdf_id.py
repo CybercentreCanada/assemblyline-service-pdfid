@@ -562,7 +562,7 @@ class PDFId(ServiceBase):
                                     if objnum in carved_content:
                                         carved_content[objnum].append((keyword, c))
                                     else:
-                                        carved_content[objnum] = [(keyword: c)]
+                                        carved_content[objnum] = [(keyword, c)]
 
                     all_errors.update(errors)
 
