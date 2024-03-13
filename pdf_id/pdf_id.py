@@ -126,7 +126,7 @@ class PDFId(ServiceBase):
         for line in pdfid_result:
             if line:
                 parts = line.split(",")
-                value = parts[len(parts) - 1]
+                value = parts[-1]
                 for index in reversed(range(len(parts) - 1)):
                     value = {parts[index]: value}
                 if isinstance(value, dict):
@@ -378,6 +378,7 @@ class PDFId(ServiceBase):
         if run_pdfparse:
             # CALL PDF parser and extract further information
             pdf_parserres = ResultSection(title_text="PDF Parser Results")
+            options: dict[str, Any]
             # STATISTICS
             # Do not run for objstms, which are being analyzed when get_malform == False
             if get_malform:
@@ -403,9 +404,7 @@ class PDFId(ServiceBase):
                     all_errors.update(errors)
 
             # Triage plugin -- search sample for keywords and carve content or extract object (if it contains a stream)
-            carved_content: dict[
-                str, list[dict[str, dict[str, Any]]]
-            ] = {}  # Format { "objnum": [{keyword: content list}}
+            carved_content: dict[str, list[dict[str, str]]] = {}  # Format { "objnum": [{keyword: content list}}
             obj_extract_triage = set()
             jbig_objs = set()
 
@@ -572,10 +571,7 @@ class PDFId(ServiceBase):
 
             # Add carved content to result output
             show_content_of_interest = False
-            if carved_content or jbig_objs:
-                carres = ResultSection(title_text="Content of Interest")
-            else:
-                carres = None
+            carres = ResultSection(title_text="Content of Interest")
 
             if jbig_objs:
                 jbigres = ResultSection(
