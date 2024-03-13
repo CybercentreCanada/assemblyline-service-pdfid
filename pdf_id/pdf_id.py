@@ -217,7 +217,6 @@ class PDFId(ServiceBase):
         embed_present = False
         objstms = False
         res = ResultSection(title_text=res_txt)
-        carved_extracted_shas = set()
 
         if request.deep_scan:
             run_pdfparse = True
@@ -581,60 +580,7 @@ class PDFId(ServiceBase):
                 show_content_of_interest = True
 
             if carved_content:
-                carved_obj_size_limit = int(request.get_param("carved_obj_size_limit"))
-                for objnum, objlist in sorted(carved_content.items()):
-                    for d in objlist:
-                        for keyw, con in d.items():
-                            subres = ResultSection(title_text=f"Object {objnum}: Hits for Keyword '{keyw}':")
-                            subres.set_heuristic(8)
-
-                            con_bytes = con.encode()
-                            if len(con) < carved_obj_size_limit:
-                                subres.set_body(con, BODY_FORMAT.MEMORY_DUMP)
-
-                                # Check for IOC content
-                                patterns = PatternMatch()
-                                st_value = patterns.ioc_match(con_bytes, bogon_ip=True)
-                                if st_value:
-                                    carres.add_subsection(subres)
-                                    show_content_of_interest = True
-                                    for ty, val in st_value.items():
-                                        for v in val:
-                                            subres.add_tag(ty, v)
-                            else:
-                                crv_sha = hashlib.sha256(con_bytes).hexdigest()
-                                is_supplementary = keyw in ["URI"]
-                                extraction_purpose = "as supplementary file" if is_supplementary else "for analysis"
-
-                                if crv_sha not in carved_extracted_shas:
-                                    f_name = f"carved_content_obj_{k}_{crv_sha[0:7]}"
-                                    subres.add_lines(
-                                        [
-                                            f"Content over {carved_obj_size_limit} bytes it will be extracted {extraction_purpose}",
-                                            f"Name: {f_name} - SHA256: {crv_sha}",
-                                        ]
-                                    )
-                                    carres.add_subsection(subres)
-                                    show_content_of_interest = True
-                                    crvf = os.path.join(self.working_directory, f_name)
-                                    with open(crvf, "wb") as f:
-                                        f.write(con_bytes)
-                                    try:
-                                        if is_supplementary:
-                                            # Add as supplementary
-                                            request.add_supplementary(
-                                                crvf, os.path.basename(crvf), f"Supplementary content from object {k}"
-                                            )
-                                        else:
-                                            request.add_extracted(
-                                                crvf,
-                                                os.path.basename(crvf),
-                                                f"Extracted content from object {k}",
-                                                safelist_interface=self.api_interface,
-                                            )
-                                    except MaxExtractedExceeded:
-                                        pass
-                                    carved_extracted_shas.add(crv_sha)
+                show_content_of_interest = self._carved_content(request, carved_content, carres)
 
             if show_content_of_interest:
                 pdf_parserres.add_subsection(carres)
@@ -939,3 +885,67 @@ class PDFId(ServiceBase):
             if re.match(FULL_URI, url_string):
                 urls.add(url_string)
         return urls
+
+    def _carved_content(
+        self, request: ServiceRequest, carved_content: dict[str, list[dict[str, str]]], carres: ResultSection
+    ) -> bool:
+        show_content_of_interest = False
+        carved_extracted_shas: set[str] = set()
+        carved_obj_size_limit = int(request.get_param("carved_obj_size_limit"))
+        for objnum, objlist in sorted(carved_content.items()):
+            for d in objlist:
+                for keyw, con in d.items():
+                    subres = ResultSection(title_text=f"Object {objnum}: Hits for Keyword '{keyw}':")
+                    subres.set_heuristic(8)
+
+                    con_bytes = con.encode()
+                    if len(con) < carved_obj_size_limit:
+                        subres.set_body(con, BODY_FORMAT.MEMORY_DUMP)
+
+                        # Check for IOC content
+                        patterns = PatternMatch()
+                        st_value = patterns.ioc_match(con_bytes, bogon_ip=True)
+                        if st_value:
+                            carres.add_subsection(subres)
+                            show_content_of_interest = True
+                            for ty, val in st_value.items():
+                                for v in val:
+                                    subres.add_tag(ty, v)
+                    else:
+                        crv_sha = hashlib.sha256(con_bytes).hexdigest()
+                        is_supplementary = keyw in ["URI"]
+                        extraction_purpose = "as supplementary file" if is_supplementary else "for analysis"
+
+                        if crv_sha not in carved_extracted_shas:
+                            f_name = f"carved_content_obj_{objnum}_{crv_sha[0:7]}"
+                            subres.add_lines(
+                                [
+                                    f"Content over {carved_obj_size_limit} bytes "
+                                    f"it will be extracted {extraction_purpose}",
+                                    f"Name: {f_name} - SHA256: {crv_sha}",
+                                ]
+                            )
+                            carres.add_subsection(subres)
+                            show_content_of_interest = True
+                            crvf = os.path.join(self.working_directory, f_name)
+                            with open(crvf, "wb") as f:
+                                f.write(con_bytes)
+                            try:
+                                if is_supplementary:
+                                    # Add as supplementary
+                                    request.add_supplementary(
+                                        crvf,
+                                        os.path.basename(crvf),
+                                        f"Supplementary content from object {objnum}",
+                                    )
+                                else:
+                                    request.add_extracted(
+                                        crvf,
+                                        os.path.basename(crvf),
+                                        f"Extracted content from object {objnum}",
+                                        safelist_interface=self.api_interface,
+                                    )
+                            except MaxExtractedExceeded:
+                                pass
+                            carved_extracted_shas.add(crv_sha)
+        return show_content_of_interest
