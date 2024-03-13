@@ -59,8 +59,7 @@ class PDFId(ServiceBase):
         #  ObjStms: Treat all ObjStms like a standalone PDF document
         if contains_objstms:
             objstm_files = self.analyze_objstm(path, working_dir, request.deep_scan)
-            obj_cnt = 1
-            for osf in objstm_files:
+            for obj_cnt, osf in enumerate(objstm_files, start=1):
                 parent_obj = os.path.basename(osf).split("_")[1]
                 res_txt = "ObjStream Object {0} from Parent Object {1}".format(obj_cnt, parent_obj)
                 # It is going to look suspicious as the service created the PDF
@@ -76,7 +75,6 @@ class PDFId(ServiceBase):
                     request, res_txt, osf, working_dir, heur, additional_keywords, get_malform=False
                 )
 
-                obj_cnt += 1
                 result.add_section(res)
 
         if all_errors:
@@ -843,7 +841,7 @@ class PDFId(ServiceBase):
         #       Is it only ever set once? or is this a logic error?
         return objstm_file
 
-    def analyze_objstm(self, path: str, working_dir: str, deep_scan: bool) -> set:
+    def analyze_objstm(self, path: str, working_dir: str, deep_scan: bool) -> set[str]:
         """Extract object streams (objstm) from PDF sample and write to file as a mock PDF.
 
         Args:
@@ -856,7 +854,7 @@ class PDFId(ServiceBase):
         """
         objstm_extracted: set[str] = set()
 
-        obj_files = set()
+        obj_files: set[str] = set()
 
         # Only extract first 2 if not deep scan
         max_obst = 100 if deep_scan else 1  # Really 2
