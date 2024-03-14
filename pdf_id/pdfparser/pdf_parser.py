@@ -3,17 +3,16 @@
 Modified by CSE to fit ASSEMBLYLINE service
 """
 
-import textwrap
+import binascii
+import hashlib
+import optparse
 import os
+import re
+import sys
+import textwrap
 import time
 import zipfile
-import sys
-import hashlib
-import binascii
 import zlib
-import optparse
-import re
-
 from copy import deepcopy
 
 __description__ = 'pdf-parser, use it to parse a PDF document'
@@ -94,13 +93,13 @@ Todo:
 """
 
 if sys.version_info[0] >= 3:
-    from io import StringIO
     import urllib.request
+    from io import StringIO
     urllib23 = urllib.request
     import configparser as ConfigParser
 else:
-    from cStringIO import StringIO
     import urllib2
+    from cStringIO import StringIO
     urllib23 = urllib2
     import ConfigParser
 try:
@@ -1724,21 +1723,23 @@ def PDFParserMain(file, working_dir, options):
                                 options.overridingfilters):
                             PrintObject(object, options)
                     elif options.yara is not None:
-                        results = object.StreamYARAMatch(
-                            rules, decoders, options.decoderoptions, not options.unfiltered, options.overridingfilters)
-                        if results is not None and results != []:
-                            for result in results:
-                                for yaraResult in result[1]:
-                                    print(
-                                        'YARA rule%s: %s (%s)' %
-                                        (IFF(result[0] == '', '', ' (stream decoder: %s)' % result[0]),
-                                            yaraResult.rule, yaraResult.namespace))
-                                    if options.yarastrings:
-                                        for stringdata in yaraResult.strings:
-                                            print('%06x %s:' % (stringdata[0], stringdata[1]))
-                                            print(' %s' % binascii.hexlify(C2BIP3(stringdata[2])))
-                                            print(' %s' % repr(stringdata[2]))
-                                PrintObject(object, options)
+                        pass
+                        # We never use this
+                        # results = object.StreamYARAMatch(
+                        #     rules, decoders, options.decoderoptions, not options.unfiltered, options.overridingfilters)
+                        # if results is not None and results != []:
+                        #     for result in results:
+                        #         for yaraResult in result[1]:
+                        #             print(
+                        #                 'YARA rule%s: %s (%s)' %
+                        #                 (IFF(result[0] == '', '', ' (stream decoder: %s)' % result[0]),
+                        #                     yaraResult.rule, yaraResult.namespace))
+                        #             if options.yarastrings:
+                        #                 for stringdata in yaraResult.strings:
+                        #                     print('%06x %s:' % (stringdata[0], stringdata[1]))
+                        #                     print(' %s' % binascii.hexlify(C2BIP3(stringdata[2])))
+                        #                     print(' %s' % repr(stringdata[2]))
+                        #         PrintObject(object, options)
                     elif options.generateembedded != 0:
                         if object.id == options.generateembedded:
                             PrintGenerateObject(object, options, 8)
