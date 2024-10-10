@@ -157,6 +157,117 @@ General Assemblyline documentation can be found at: https://cybercentrecanada.gi
 
 Ce service d'Assemblyline extrait les métadonnées et les objets des fichiers PDF en utilisant les outils PDFId (Version 2.7) et PDFParser (Version 7.4) de Didier Stevens.
 
+
+## Détails du service
+
+### Configuration
+- ADDITIONAL_KEYS : Liste des mots-clés recherchés par PDFid
+- HEURISTICS : Choisissez le plugin heuristique à exécuter pendant l'exécution du service. Voici la liste des plugins à choisir :
+    - pdf_id/pdfid/plugin_embeddedfile
+    - pdf_id/pdfid/plugin_nameobfuscation
+    - pdf_id/pdfid/plugin_suspicious_properties
+    - pdf_id/pdfid/plugin_triage
+- MAX_PDF_SIZE : Taille maximale du PDF à traiter par PDFid. Cette valeur sera ignorée lors de l'analyse approfondie
+
+### Exécution
+Le service PDFId signale les informations suivantes pour chaque fichier lorsqu'il est présent :
+
+#### Informations sur le fichier
+
+##### PDFId
+
+- Chaîne d'en-tête du PDF
+- Nombre d' :
+    - objects
+    - streams
+    - endstreams
+    - xref
+    - trailer
+    - startxref
+    - '/Page'
+    - '/Encrypt'
+    - '/Objstm'
+    - '/JS'
+    - '/Javascript'
+    - '/AA'
+    - '/OpenAction'
+    - '/AcroForm'
+    - '/JBIG2Decode'
+    - '/RichMedia'
+    - '/Launch'
+    - '/Colours'
+    - '%%EOF'
+    - Bytes after %%EOF
+- Entropie totale
+- Entropie à l'intérieur des flux
+- Entropie en dehors des flux
+- Mod Date (AL tag : file.pdf.date.modified)
+- Date de création (AL tag : file.date.creation)
+- Date de dernière modification (AL tag : file.date.last_modified)
+- Source Modified Date (AL tag : file.pdf.date.source_modified)
+
+##### PDFParser
+
+*Note:* PDFParser ne sera exécuté sur un échantillon qu'en mode d'analyse approfondie, ou si les plugins PDFId (voir ci-dessous) ont détecté la présence d'éléments suspects dans l'échantillon.
+
+- Signale le nombre de :
+    - /Comment
+    - /XREF
+    - /Trailer
+    - /StartXref
+    - /Indirect object
+    - /Catalog
+    - /ExtGState
+    - /Font
+    - /FontDescriptor
+    - /Pages
+
+- Extrait les éléments du PDF :
+    - Comments
+    - Trailer
+    - StartXref
+
+- Extrait les éléments suspects :
+    - Objets entiers (dans le fichier extrait) lorsqu'ils sont signalés par les modules PDFId (les objets JBIG2Decode ne seront extraits qu'en mode d'analyse approfondie).
+    - Le contenu d'un objet spécifique (dans le résultat de l'analyse AL) et l'exécution de motifs FrankenStrings contre le contenu pour rechercher des IOC (déterminés par les plugins PDFId).
+
+- ObjStms
+    - Le service tentera de retraiter les flux d'objets dans les échantillons sous forme de fichiers PDF pour les soumettre à nouveau aux analyseurs PDFId et PDFParser. En mode d'analyse approfondie, un maximum de 100 objstms sera retraité, sinon un maximum de deux objstms sera retraité.
+
+#### Plugins PDFId
+
+Les plugins PDFId sont des scripts python utilisés par le service PDFId pour évaluer les propriétés suspectes sur la base des résultats PDFId. Les plugins peuvent être ajoutés au service par les utilisateurs (voir la configuration ci-dessus). Le format suivant est requis pour que les scripts des plugins fonctionnent avec ce service AL :
+
+```python
+class cPDFiD[NAME](cPluginParent):
+    onlyValidPDF = True
+    name = '[NAME OF PLUGIN]'
+
+    def __init__(self, oPDFiD):
+        self.oPDFiD = oPDFiD
+        # Whether or not hits is used, it must be returned by Score
+        self.hits = []
+
+    def Score(self):
+        score = 0
+        [conditions that might adjust score/self.hits]
+
+        return score, self.hits
+
+    def Instructions(self, score, hits):
+        if score == 1000:
+            # These messages will show in AL result,
+            along with score
+            return 'Some message'
+
+        if score == 500:
+            return 'Some other message'
+
+        if score == 0:
+            return
+```
+Voir le code source dans le dossier "pdfid" pour des exemples de plugins déjà utilisés par ce service.
+
 ## Variantes et étiquettes d'image
 
 Les services d'Assemblyline sont construits à partir de l'image de base [Assemblyline service](https://hub.docker.com/r/cccs/assemblyline-v4-service-base),
