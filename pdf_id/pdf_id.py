@@ -835,7 +835,7 @@ class PDFId(ServiceBase):
         ):
             if b"/Filter" not in dictionary:
                 streams.append(stream_data)
-            elif b"/Filter /FlateDecode" in dictionary:
+            elif re.search(b"/Filter\s*(?:/FlateDecode|\[\s*/FlateDecode\s*\])", dictionary):
                 try:
                     streams.append(zlib.decompress(stream_data.strip(b"\r\n")))
                 except zlib.error as e:
