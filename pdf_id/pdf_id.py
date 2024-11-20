@@ -831,11 +831,11 @@ class PDFId(ServiceBase):
         dictionary: bytes
         stream_data: bytes
         for i, (dictionary, stream_data) in enumerate(
-            re.findall(b"(?s)<<([^>]+)>>\s*stream\n?(.+?)endstream", request.file_contents)
+            re.findall(rb"(?s)<<([^>]+)>>\s*stream\n?(.+?)endstream", request.file_contents)
         ):
             if b"/Filter" not in dictionary:
                 streams.append(stream_data)
-            elif re.search(b"/Filter\s*(?:/FlateDecode|\[\s*/FlateDecode\s*\])", dictionary):
+            elif re.search(rb"/Filter\s*(?:/FlateDecode|\[\s*/FlateDecode\s*\])", dictionary):
                 try:
                     streams.append(zlib.decompress(stream_data.strip(b"\r\n")))
                 except zlib.error as e:
