@@ -84,7 +84,7 @@ class PDFId(ServiceBase):
                 erres.add_line(e)
             result.add_section(erres)
 
-        # pikepdf parsing
+        # regex parsing
         self.additional_parsing(request)
 
     @staticmethod
@@ -831,11 +831,11 @@ class PDFId(ServiceBase):
         dictionary: bytes
         stream_data: bytes
         for i, (dictionary, stream_data) in enumerate(
-            re.findall(b"(?s)<<([^>]+)>>\nstream(.+?)endstream", request.file_contents)
+            re.findall(rb"(?s)<<([^>]+)>>\s*stream\n?(.+?)endstream", request.file_contents)
         ):
             if b"/Filter" not in dictionary:
                 streams.append(stream_data)
-            elif b"/Filter /FlateDecode" in dictionary:
+            elif re.search(rb"/Filter\s*(?:/FlateDecode|\[\s*/FlateDecode\s*\])", dictionary):
                 try:
                     streams.append(zlib.decompress(stream_data.strip(b"\r\n")))
                 except zlib.error as e:
@@ -878,7 +878,7 @@ class PDFId(ServiceBase):
     def _get_annotation_urls(self, data: bytes) -> set[str]:
         urls: set[str] = set()
         url: bytes
-        for url in re.findall(rb"/URI \(([^)]+)\)", data):
+        for url in re.findall(rb"/URI\s*\(([^)]+)\)", data):
             try:
                 url_string = url.decode("ascii")
             except UnicodeDecodeError:
