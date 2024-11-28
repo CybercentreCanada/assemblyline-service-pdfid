@@ -1,7 +1,6 @@
 name: PDFId
 version: $SERVICE_TAG
-description: >-
-  This service extracts metadata from PDFs using Didier Stevens PDFId & PDFParser.
+description: This Assemblyline service extracts metadata and objects from PDF files using Didier Stevens PDFId (Version 2.7) and PDFParser (Version 7.4) tools.
 
 accepts: document/pdf
 rejects: empty|metadata/.*|document/pdf/passwordprotected
