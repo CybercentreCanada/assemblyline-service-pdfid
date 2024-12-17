@@ -162,7 +162,7 @@ Ce service d'Assemblyline extrait les métadonnées et les objets des fichiers P
 
 ### Configuration
 - ADDITIONAL_KEYS : Liste des mots-clés recherchés par PDFid
-- HEURISTICS : Choisissez le plugin heuristique à exécuter pendant l'exécution du service. Voici la liste des plugins à choisir :
+- HEURISTICS : Choisissez le module d'extension heuristique à exécuter pendant l'exécution du service. Voici la liste des modules d'extension à choisir :
     - pdf_id/pdfid/plugin_embeddedfile
     - pdf_id/pdfid/plugin_nameobfuscation
     - pdf_id/pdfid/plugin_suspicious_properties
@@ -170,14 +170,14 @@ Ce service d'Assemblyline extrait les métadonnées et les objets des fichiers P
 - MAX_PDF_SIZE : Taille maximale du PDF à traiter par PDFid. Cette valeur sera ignorée lors de l'analyse approfondie
 
 ### Exécution
-Le service PDFId signale les informations suivantes pour chaque fichier lorsqu'il est présent :
+Le service PDFId rapporte les informations suivantes pour chaque fichier lorsqu'elles sont présentes :
 
 #### Informations sur le fichier
 
 ##### PDFId
 
-- Chaîne d'en-tête du PDF
-- Nombre d' :
+- Chaîne de caractère de l'en-tête du PDF
+- Nombre de :
     - objects
     - streams
     - endstreams
@@ -201,14 +201,14 @@ Le service PDFId signale les informations suivantes pour chaque fichier lorsqu'i
 - Entropie totale
 - Entropie à l'intérieur des flux
 - Entropie en dehors des flux
-- Mod Date (AL tag : file.pdf.date.modified)
+- Date de modification (AL tag : file.pdf.date.modified)
 - Date de création (AL tag : file.date.creation)
-- Date de dernière modification (AL tag : file.date.last_modified)
-- Source Modified Date (AL tag : file.pdf.date.source_modified)
+- Date de la dernière modification (AL tag : file.date.last_modified)
+- Date de la modification de la source de données (AL tag : file.pdf.date.source_modified)
 
 ##### PDFParser
 
-*Note:* PDFParser ne sera exécuté sur un échantillon qu'en mode d'analyse approfondie, ou si les plugins PDFId (voir ci-dessous) ont détecté la présence d'éléments suspects dans l'échantillon.
+*Note:* PDFParser n'est exécuté sur un échantillon qu'en mode d'analyse approfondie, ou si les modules d'extension PDFId (voir ci-dessous) ont détecté la présence d'éléments suspicieux dans l'échantillon.
 
 - Signale le nombre de :
     - /Comment
@@ -227,7 +227,7 @@ Le service PDFId signale les informations suivantes pour chaque fichier lorsqu'i
     - Trailer
     - StartXref
 
-- Extrait les éléments suspects :
+- Extrait les éléments suspicieux :
     - Objets entiers (dans le fichier extrait) lorsqu'ils sont signalés par les modules PDFId (les objets JBIG2Decode ne seront extraits qu'en mode d'analyse approfondie).
     - Le contenu d'un objet spécifique (dans le résultat de l'analyse AL) et l'exécution de motifs FrankenStrings contre le contenu pour rechercher des IOC (déterminés par les plugins PDFId).
 
@@ -236,7 +236,7 @@ Le service PDFId signale les informations suivantes pour chaque fichier lorsqu'i
 
 #### Plugins PDFId
 
-Les plugins PDFId sont des scripts python utilisés par le service PDFId pour évaluer les propriétés suspectes sur la base des résultats PDFId. Les plugins peuvent être ajoutés au service par les utilisateurs (voir la configuration ci-dessus). Le format suivant est requis pour que les scripts des plugins fonctionnent avec ce service AL :
+Les modules d'extension PDFId sont des scripts python utilisés par le service PDFId pour évaluer les propriétés suspicieuses sur la base des résultats PDFId. Les modules d'extension peuvent être ajoutés au service par les utilisateurs (voir la configuration ci-dessus). Le format suivant est requis pour que les scripts des modules d'extension fonctionnent avec ce service AL :
 
 ```python
 class cPDFiD[NAME](cPluginParent):
