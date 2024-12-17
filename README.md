@@ -167,7 +167,7 @@ Ce service d'Assemblyline extrait les métadonnées et les objets des fichiers P
     - pdf_id/pdfid/plugin_nameobfuscation
     - pdf_id/pdfid/plugin_suspicious_properties
     - pdf_id/pdfid/plugin_triage
-- MAX_PDF_SIZE : Taille maximale du PDF à traiter par PDFid. Cette valeur sera ignorée lors de l'analyse approfondie
+- MAX_PDF_SIZE : Taille maximale du PDF à traiter par PDFid. Cette valeur est ignorée lors de l'analyse approfondie
 
 ### Exécution
 Le service PDFId rapporte les informations suivantes pour chaque fichier lorsqu'elles sont présentes :
