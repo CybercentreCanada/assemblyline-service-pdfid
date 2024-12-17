@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/CybercentreCanada/assemblyline-service-template.git",
-  "commit": "2f961bb22a68cd997efef36a7f41bbbe19b3dcf8",
+  "commit": "6d2fcb683f00eeda843cf2c40981e266679a97dc",
   "checkout": null,
   "context": {
     "cookiecutter": {

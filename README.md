@@ -283,7 +283,7 @@ Les services d'Assemblyline utilisent les définitions d'étiquettes suivantes:
 
 ## Exécution de ce service
 
-Il s'agit d'un service d'Assemblyline. Il est optimisé pour fonctionner dans le cadre d'un déploiement d'Assemblyline.
+Ce service est spécialement optimisé pour fonctionner dans le cadre d'un déploiement d'Assemblyline.
 
 Si vous souhaitez tester ce service localement, vous pouvez exécuter l'image Docker directement à partir d'un terminal:
 
