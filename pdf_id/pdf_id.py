@@ -14,7 +14,12 @@ from assemblyline.odm.base import FULL_URI
 from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import BODY_FORMAT, Heuristic, Result, ResultSection
+from assemblyline_v4_service.common.result import (
+    BODY_FORMAT,
+    Heuristic,
+    Result,
+    ResultSection,
+)
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 from pdf_id.pdfid import pdfid
@@ -839,7 +844,8 @@ class PDFId(ServiceBase):
                 try:
                     streams.append(zlib.decompress(stream_data.strip(b"\r\n")))
                 except zlib.error as e:
-                    self.log.error(f"{request.sha256} stream {i} /FlateDecode failed: {e}")
+                    # Not a critical error, just a warning
+                    self.log.warning(f"{request.sha256} stream {i} /FlateDecode failed: {e}")
             else:  # TBD: Other encoding types
                 pass
         all_streams = b"".join(streams)

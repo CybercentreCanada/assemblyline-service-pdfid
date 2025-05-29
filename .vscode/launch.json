@@ -12,7 +12,7 @@
             "cwd": "${workspaceFolder}",
             "args": [
                 "-d",
-                "pdf_id.pdf_id.Pdfid",
+                "pdf_id.pdf_id.PDFId",
                 "${file}"
             ],
             "justMyCode": false,
