@@ -133,6 +133,9 @@
         "tags": {
           "network": {
             "static": {
+              "domain": [
+                "bit.ly"
+              ],
               "uri": [
                 "https://bit.ly/newbookingupdates"
               ]
@@ -167,6 +170,13 @@
       }
     ],
     "tags": {
+      "network.static.domain": [
+        {
+          "heur_id": 27,
+          "signatures": [],
+          "value": "bit.ly"
+        }
+      ],
       "network.static.uri": [
         {
           "heur_id": 27,

@@ -4,14 +4,13 @@ import hashlib
 import os
 import re
 import zlib
-from collections.abc import Iterable
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
-from assemblyline_service_utilities.common.balbuzard.patterns import PatternMatch
+from assemblyline_service_utilities.common.extractor.decode_wrapper import DecoderWrapper
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
@@ -26,10 +25,11 @@ from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
     from typing import Any
 
 
-def convert_tags(tags: dict[str, Iterable[bytes]]) -> dict[str, list[str]]:
+def convert_tags(tags: Mapping[str, Iterable[bytes]]) -> dict[str, list[str]]:
     return {tag_type: [tag.decode() for tag in tag_set] for tag_type, tag_set in tags.items()}
 
 
@@ -126,7 +126,7 @@ class PDFId(ServiceBase):
             raise Exception(f"PDFID failed to run on sample. Error: {e}")
 
         # Process pdfid_results for service results
-        pdfid_result_dict = {}
+        pdfid_result_dict: dict[Any, Any] = {}
         for line in pdfid_result:
             if line:
                 parts = line.split(",")
@@ -135,7 +135,7 @@ class PDFId(ServiceBase):
                     value = {parts[index]: value}
                 if isinstance(value, dict):
                     try:
-                        pdfid_result_dict = recursive_update(pdfid_result_dict, value)
+                        pdfid_result_dict = dict(recursive_update(pdfid_result_dict, value))
                     except Exception:
                         pass
 
@@ -814,7 +814,7 @@ class PDFId(ServiceBase):
         options_objstm = {"elements": "i", "type": "/ObjStm", "max_objstm": max_obst}
 
         pdf_parser_result, _ = self.get_pdf_parser(path, working_dir, options_objstm)
-        parts = pdf_parser_result.get("parts", None) if pdf_parser_result else None
+        parts = pdf_parser_result.get("parts", []) if pdf_parser_result else []
 
         idx = 0
         for p in sorted(p for p in parts if "Type: /ObjStm" in p):
@@ -851,7 +851,7 @@ class PDFId(ServiceBase):
         all_streams = b"".join(streams)
         urls = self._get_annotation_urls(all_streams)
         scripts: list[bytes] = re.findall(rb"(?s)<script\b[^>]*>([^<].*?)</script\s*>", all_streams)
-        patterns = PatternMatch()
+        md = DecoderWrapper(self.working_directory)
         if urls:
             body = "\n".join(urls)
             request.result.add_section(
@@ -859,12 +859,12 @@ class PDFId(ServiceBase):
                     "URL in Annotations",
                     body=body,
                     heuristic=Heuristic(27),
-                    tags=convert_tags(patterns.ioc_match(body.encode())),
+                    tags=convert_tags(md.ioc_tags(body.encode())),
                 )
             )
         if scripts:
             all_scripts = b"\n".join(scripts)
-            tags: dict[str, list[str]] = convert_tags(patterns.ioc_match(all_scripts))
+            tags: dict[str, list[str]] = convert_tags(md.ioc_tags(all_scripts))
             heuristic = Heuristic(28)
             if b"exportXFAData" in all_scripts:
                 tags["attribution.exploit"] = ["CVE-2023-27363"]
@@ -909,8 +909,8 @@ class PDFId(ServiceBase):
                     subres.set_body(con, BODY_FORMAT.MEMORY_DUMP)
 
                     # Check for IOC content
-                    patterns = PatternMatch()
-                    st_value = patterns.ioc_match(con_bytes, bogon_ip=True)
+                    md = DecoderWrapper(self.working_directory)
+                    st_value = md.ioc_tags(con_bytes)
                     if st_value:
                         carres.add_subsection(subres)
                         show_content_of_interest = True
