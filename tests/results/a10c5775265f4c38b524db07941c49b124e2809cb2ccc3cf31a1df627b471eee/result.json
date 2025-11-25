@@ -116,7 +116,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "https://nini6643.ahltobaccosales.mw//@\nhttps://atsin6643.ahltobaccosales.mw//@\nhttps://heth6643.ahltobaccosales.mw//@\nhttps://ggtt6643.ahltobaccosales.mw//@",
+        "body": "https://atsin6643.ahltobaccosales.mw//@\nhttps://heth6643.ahltobaccosales.mw//@\nhttps://ggtt6643.ahltobaccosales.mw//@\nhttps://nini6643.ahltobaccosales.mw//@",
         "body_config": {},
         "body_format": "TEXT",
         "classification": "TLP:C",
@@ -134,15 +134,15 @@
           "network": {
             "static": {
               "domain": [
+                "atsin6643.ahltobaccosales.mw",
                 "heth6643.ahltobaccosales.mw",
                 "ggtt6643.ahltobaccosales.mw",
-                "atsin6643.ahltobaccosales.mw",
                 "nini6643.ahltobaccosales.mw"
               ],
               "uri": [
-                "https://ggtt6643.ahltobaccosales.mw//@",
                 "https://atsin6643.ahltobaccosales.mw//@",
                 "https://heth6643.ahltobaccosales.mw//@",
+                "https://ggtt6643.ahltobaccosales.mw//@",
                 "https://nini6643.ahltobaccosales.mw//@"
               ]
             }
