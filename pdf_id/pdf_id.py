@@ -850,7 +850,7 @@ class PDFId(ServiceBase):
                 pass
         all_streams = b"".join(streams)
         urls = self._get_annotation_urls(all_streams)
-        scripts: list[bytes] = re.findall(rb"(?s)<script\b[^>]*>([^<].*?)</script\s*>", all_streams)
+        scripts: list[bytes] = re.findall(rb"(?is)<script\b[^>]*>([^<].*?)</script\s*>", all_streams)
         md = DecoderWrapper(self.working_directory)
         if urls:
             body = "\n".join(urls)
