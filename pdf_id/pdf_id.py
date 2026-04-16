@@ -4,7 +4,9 @@ import hashlib
 import os
 import re
 import zlib
+from base64 import b64decode
 from copy import deepcopy
+from tempfile import NamedTemporaryFile
 from typing import TYPE_CHECKING
 
 from assemblyline.common.dict_utils import recursive_update
@@ -22,6 +24,7 @@ from assemblyline_v4_service.common.result import (
     ResultSection,
 )
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
+from multidecoder.decoders.base64 import BASE64_RE
 
 from pdf_id.pdfid import pdfid
 from pdf_id.pdfparser import pdf_parser
@@ -31,9 +34,10 @@ if TYPE_CHECKING:
     from typing import Any
 
 
+COMPILED_BASE64_RE = re.compile(BASE64_RE)
+
 def convert_tags(tags: Mapping[str, Iterable[bytes]]) -> dict[str, list[str]]:
     return {tag_type: [tag.decode() for tag in tag_set] for tag_type, tag_set in tags.items()}
-
 
 class PDFId(ServiceBase):
     def __init__(self, config: dict | None = None) -> None:
@@ -277,6 +281,28 @@ class PDFId(ServiceBase):
                         fres.add_line(f"{k}: {v}")
                     if k in additional_keywords:
                         triage_keywords.add(k.replace("/", "", 1))
+
+                    # Check to see if the Keyword flag is base64 encoded content (omit the `/` symbol when checking)
+                    for kw_segment in k.split('/'):
+                        if not kw_segment:
+                            continue
+
+                        encoded_k = kw_segment.encode()
+                        if COMPILED_BASE64_RE.match(encoded_k):
+                            # Add the content as an extracted file for further analysis
+                            try:
+                                data = b64decode(encoded_k + (b"=" * (len(encoded_k) % 4)))
+                                with NamedTemporaryFile(delete=False, dir=self.working_directory) as f:
+                                    f.write(data)
+                                request.add_extracted(
+                                    f.name,
+                                    f"{hashlib.sha256(data).hexdigest()}_base64",
+                                    "Decoded base64 content found in PDFID keyword flags.",
+                                    safelist_interface=self.api_interface,
+                                )
+                            except ValueError:
+                                # Not a valid base64 string, skip it
+                                continue
 
             plugin = pdfid_result.get("Plugin", [])
 
@@ -917,11 +943,10 @@ class PDFId(ServiceBase):
             all_js = b"\n".join(js_literals)
             js_tags: dict[str, list[str]] = convert_tags(md.ioc_tags(all_js))
             js_name = hashlib.sha256(all_js).hexdigest()[:8] + "_js_literal.js"
-            js_path = os.path.join(self.working_directory, js_name)
             try:
-                with open(js_path, "wb") as f:
+                with NamedTemporaryFile(delete=False, dir=self.working_directory, prefix=js_name) as f:
                     f.write(all_js)
-                request.add_extracted(js_path, js_name, "JavaScript extracted from PDF /JS entries.")
+                request.add_extracted(f.name, js_name, "JavaScript extracted from PDF /JS entries.")
             except MaxExtractedExceeded:
                 pass
             except Exception as e:

@@ -139,12 +139,20 @@
   "files": {
     "extracted": [
       {
+        "name": "51c38129a8b9dc22085180853378296db927934e8a95f96205f80cb762979bff_base64",
+        "sha256": "51c38129a8b9dc22085180853378296db927934e8a95f96205f80cb762979bff"
+      },
+      {
         "name": "carved_content_obj_10_9980a5d",
         "sha256": "9980a5d09c1b94eab5eaea21c2e1363bd1b7fccb1cc3d941cf40fd3ea8d7f010"
       },
       {
         "name": "ac4aa71c_js_literal.js",
         "sha256": "ac4aa71c501d251717ff180f71d09f948b98863a4f321d6425e972c101ee65c0"
+      },
+      {
+        "name": "f02d0bff0daeb02a925906f97783d990923b8a888c17c216e865c8efccfe7ee8_base64",
+        "sha256": "f02d0bff0daeb02a925906f97783d990923b8a888c17c216e865c8efccfe7ee8"
       }
     ],
     "supplementary": []
