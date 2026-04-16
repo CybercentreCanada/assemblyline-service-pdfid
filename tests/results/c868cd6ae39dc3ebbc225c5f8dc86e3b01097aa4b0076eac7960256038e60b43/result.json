@@ -1,7 +1,7 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 0,
+    "score": 100,
     "sections": [
       {
         "auto_collapse": false,
@@ -54,15 +54,46 @@
         "tags": {},
         "title_text": "PDF Keyword Flags (Count)",
         "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 19,
+          "score": 100,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded JavaScript",
+        "zeroize_on_tag_safe": false
       }
     ]
   },
   "files": {
-    "extracted": [],
+    "extracted": [
+      {
+        "name": "1381ebf2_js_literal.js",
+        "sha256": "1381ebf27530b003d98291c41853e2a0e17178d0eb2019570b9e65f165d424a2"
+      }
+    ],
     "supplementary": []
   },
   "results": {
-    "heuristics": [],
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 19,
+        "signatures": []
+      }
+    ],
     "tags": {},
     "temp_submission_data": {}
   }

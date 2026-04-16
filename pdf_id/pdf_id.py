@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.exceptions import NonRecoverableError
 from assemblyline.odm.base import FULL_URI
-from assemblyline_service_utilities.common.extractor.decode_wrapper import DecoderWrapper
+from assemblyline_service_utilities.common.extractor.decode_wrapper import (
+    DecoderWrapper,
+)
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
@@ -830,6 +832,34 @@ class PDFId(ServiceBase):
 
         return obj_files
 
+    @staticmethod
+    def _extract_js_literals(data: bytes) -> list[bytes]:
+        """Extract JavaScript code from /JS (...) literal strings in raw PDF data.
+
+        Handles nested parentheses and backslash-escaped characters per the PDF spec.
+        """
+        js_literals: list[bytes] = []
+        for m in re.finditer(rb"/JS\s*\(", data):
+            start = m.end()
+            depth = 1
+            i = start
+            while i < len(data) and depth > 0:
+                if data[i : i + 1] == b"\\":
+                    i += 2  # skip escaped character
+                    continue
+                if data[i : i + 1] == b"(":
+                    depth += 1
+                elif data[i : i + 1] == b")":
+                    depth -= 1
+                i += 1
+            if depth == 0:
+                js_literal = data[start : i - 1]
+                # Unescape PDF string escapes
+                js_literal = re.sub(rb"\\([\\()\r\n])", lambda em: em.group(1), js_literal)
+                if js_literal.strip():
+                    js_literals.append(js_literal)
+        return js_literals
+
     def additional_parsing(self, request: ServiceRequest) -> None:
         """Parses urls and scripts in streams"""
         streams = []
@@ -880,6 +910,25 @@ class PDFId(ServiceBase):
             except Exception as e:
                 self.log.warning(f"Failed to write scripts file: {e}")
             request.result.add_section(ResultSection("PDF Scripts", heuristic=heuristic, tags=tags))
+
+        # Extract JavaScript from /JS literal strings in the PDF
+        js_literals = self._extract_js_literals(request.file_contents)
+        if js_literals:
+            all_js = b"\n".join(js_literals)
+            js_tags: dict[str, list[str]] = convert_tags(md.ioc_tags(all_js))
+            js_name = hashlib.sha256(all_js).hexdigest()[:8] + "_js_literal.js"
+            js_path = os.path.join(self.working_directory, js_name)
+            try:
+                with open(js_path, "wb") as f:
+                    f.write(all_js)
+                request.add_extracted(js_path, js_name, "JavaScript extracted from PDF /JS entries.")
+            except MaxExtractedExceeded:
+                pass
+            except Exception as e:
+                self.log.warning(f"Failed to write JS literal file: {e}")
+            request.result.add_section(
+                ResultSection("Embedded JavaScript", heuristic=Heuristic(19), tags=js_tags)
+            )
 
     def _get_annotation_urls(self, data: bytes) -> set[str]:
         urls: set[str] = set()
