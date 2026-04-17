@@ -1,0 +1,176 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 100,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Main Document Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDFiD Version 0.2.8 ",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDFID Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "PDF Header: %PDF-1.5\nobj: 28\nendobj: 28\nstream: 13\nendstream: 13\nxref: 1\ntrailer: 1\nstartxref: 1",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Properties",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "/JavaScript: 2\n/XObject: 2\n/BaseFont: 3\n/BitsPerComponent: 3\n/ColorSpace: 2\n/Count: 2\n/DeviceRGB: 2\n/EF: 243\n/Encoding: 2\n/Filespec: 243\n/Filter: 13\n/FlateDecode: 12\n/Font: 4\n/FontDescriptor: 2\n/GlyphLessFont: 3\n/GoTo: 2\n/Height: 2\n/Image: 2\n/Length: 13\n/Names: 3\n/Outlines: 2\n/Pages: 2\n/Parent: 3\n/Subtype: 7\n/Title: 2\n/Type: 254\n/UF: 243\n/Width: 2\n/XYZ: 2\n/dmFyIGEwXzB4Y2E3NjAwPWEwXzB4NTQ5ZjsoZnVuY3Rpb24oXzB4NTYyY2UxLF8weDM3YjBjOCl7dmFyIF8weDRlOGNkNT1hMF8weDU0OWYsXzB4NDZjYjE3PV8weDU2MmNlMSgpO3doaWxlKCEhW10pe3RyeXt2YXIgXzB4MzJlZjNhPS1wYXJzZUludChfMHg0ZThjZDUoMHgyNGQpKS8weDEqKC1wYXJzZUludChfMHg0ZThjZDUoMHgyM2UpKS8weDIpKy1wYXJzZUludChfMHg0ZThjZDUoMHgyMzApKS8weDMrLXBhcnNlSW50KF8weDRlOGNkNSgweDIzMSkpLzB4NCooLXBhcnNlSW50KF8weDRlOGNkNSgweDI0YykpLzB4NSkrLXBhcnNlSW50KF8weDRlOGNkNSgweDI2OCkpLzB4NioocGFyc2VJbnQoXzB4NGU4Y2Q1KDB4MjM3KSkvMHg3KSstcGFyc2VJbnQoXzB4NGU4Y2Q1KDB4MjY2KSkvMHg4KihwYXJzZUludChfMHg0ZThjZDUoMHgxZDkpKS8weDkpK3BhcnNlSW50KF8weDRlOGNkNSgweDI2MSkpLzB4YSooLXBhcnNlSW50KF8weDRlOGNkNSgweDFlMSkpLzB4YikrcGFyc2VJbnQoXzB4NGU4Y2Q1KDB4MjYzKSkvMHhjO2lmKF8weDMyZWYzYT09PV8weDM3YjBjOClicmVhaztlbHNlIF8weDQ2Y2IxN1sncHVzaCddKF8weDQ2Y2IxN1snc2hpZnQnXSgpKTt9Y2F0Y2goXzB4MzE1M2RmKXtfMHg0NmNiMTdbJ3B1c2gnXShfMHg0NmNiMTdbJ3NoaWZ0J10oKSk7fX19KGEwXzB4MWE5NywweGI2MzM1KSk7dmFyIGxheWVycz10aGlzW2EwXzB4Y2E3NjAwKDB4MWVlKV0oKTtmb3IodmFyIGk9MHgwO2k8dGhpc1thMF8weGNhNzYwMCgweDIxYSldWydsZW5ndGgnXTtpKyspbGF5ZXJzW2ldW2EwXzB4Y2E3NjAwKDB4MWY2KV09IVtdO2Z1bmN0aW9uIGNoZWNrSW50KF8weDRhYWQxMil7cmV0dXJuIHBhcnNlSW50KF8weDRhYWQxMik9PT1fMHg0YWFkMTI7fWZ1bmN0aW9uIGNoZWNrSW50cyhfMHg1N2ZlMjgpe3ZhciBfMHgyMDRjOWU9YTBfMHhjYTc2MDA7aWYoIWNoZWNrSW50KF8weDU3ZmUyOFsnbGVuZ3RoJ10pKXJldHVybiFbXTtmb3IodmFyIF8weDMxYWIwND0weDA7XzB4MzFhYjA0PF8weDU3ZmUyOFtfMHgyMDRjOWUoMHgyMTMpXTtfMHgzMWFiMDQrKyl7aWYoIWNoZWNrSW50KF8weDU3ZmUyOFtfMHgzMWFiMDRdKXx8XzB4NTdmZTI4W18weDMxYWIwNF08MHgwfHxfMHg1N2ZlMjhbXzB4MzFhYjA0XT4weGZmKXJldHVybiFbXTt9cmV0dXJuISFbXTt9ZnVuY3Rpb24gY29lcmNlQXJyYXkoXzB4MjVmOTU4LF8weDE4OTEzNil7dmFyIF8weDRmNTg2Yz1hMF8weGNhNzYwMDtpZihfMHgyNWY5NThbJ2J1ZmZlciddJiZfMHgyNWY5NThbXzB4NGY1ODZjKDB4MjFjKV09PT1fMHg0ZjU4NmMoMHgxZmEpKXJldHVybiBfMHgxODkxMzYmJihfMHgyNWY5NThbXzB4NGY1ODZjKDB4MWUwKV0/XzB4MjVmOTU4PV8weDI1Zjk1OFtfMHg0ZjU4NmMoMHgxZTApXSgpOl8weDI1Zjk1OD1BcnJheVtfMHg0ZjU4NmMoMHgyM2MpXVtfMHg0ZjU4NmMoMHgxZTApXVsnYycrKCt7fStbXSlbKyErW11dKydsbCddKF8weDI1Zjk1OCkpLF8weDI1Zjk1ODtpZihBcnJheVtfMHg0ZjU4NmMoMHgyMTUpXShfMHgyNWY5NTgpKXtpZighY2hlY2tJbnRzKF8weDI1Zjk1OCkpdGhyb3cgbmV3IEVycm9yKF8weDRmNTg2YygweDI2MCkrXzB4MjVmOTU4KTtyZXR1cm4gbmV3IFVpbnQ4QXJyYXkoXzB4MjVmOTU4KTt9aWYoY2hlY2tJbnQoXzB4MjVmOTU4W18weDRmNTg2YygweDIxMyldKSYmY2hlY2tJbnRzKF8weDI1Zjk1OCkpcmV0dXJuIG5ldyBVaW50OEFycmF5KF8weDI1Zjk1OCk7dGhyb3cgbmV3IEVycm9yKF8weDRmNTg2YygweDFkZikpO31mdW5jdGlvbiBjcmVhdGVBcnJheShfMHg4MmYyYjApe3JldHVybiBuZXcgVWludDhBcnJheShfMHg4MmYyYjApO31mdW5jdGlvbiBjb3B5QXJyYXkoXzB4ZjIwMTQ0LF8weDQzNmVhMSxfMHgyOWQyY2IsXzB4MTc0ZWRhLF8weDNjNmJmZil7dmFyIF8weDQ3YTJhNz1hMF8weGNhNzYwMDsoXzB4MTc0ZWRhIT1udWxsfHxfMHgzYzZiZmYhPW51bGwpJiYoXzB4ZjIwMTQ0W18weDQ3YTJhNygweDFlMCldP18weGYyMDE0ND1fMHhmMjAxNDRbXzB4NDdhMmE3KDB4MWUwKV0oXzB4MTc0ZWRhLF8weDNjNmJmZik6XzB4ZjIwMTQ0PUFycmF5W18weDQ3YTJhNygweDIzYyldW18weDQ3YTJhNygweDFlMCldW18weDQ3YTJhNygweDI1OSldKF8weGYyMDE0NCxfMHgxNzRlZGEsXzB4M2M2YmZmKSksXzB4NDM2ZWExW18weDQ3YTJhNygweDFlMildKF8weGYyMDE0NCxfMHgyOWQyY2IpO312YXIgY29udmVydFV0Zjg9KGZ1bmN0aW9uKCl7ZnVuY3Rpb24gXzB4MTFhYjU3KF8weDEzYjE3Nil7dmFyIF8weDUxNTgwMT1hMF8weDU0OWYsXzB4MjQzZjU5PVtdLF8weGU5M2U5Mj0weDA7XzB4MTNiMTc2PWVuY29kZVVSSShfMHgxM2IxNzYpO3doaWxlKF8weGU5M2U5MjxfMHgxM2IxNzZbJ2xlbmd0aCddKXt2YXIgXzB4Y2JiMjY4PV8weDEzYjE3NltfMHg1MTU4MDEoMHgxZTYpXShfMHhlOTNlOTIrKyk7XzB4Y2JiMjY4PT09MHgyNT8oXzB4MjQzZjU5W18weDUxNTgwMSgweDI0NSldKHBhcnNlSW50KF8weDEzYjE3NltfMHg1MTU4MDEoMHgxZTUpXShfMHhlOTNlOTIsMHgyKSwweDEwKSksXzB4ZTkzZTkyKz0weDIpOl8weDI0M2Y1OVtfMHg1MTU4MDEoMHgyNDUpXShfMHhjYmIyNjgpO31yZXR1cm4gY29lcmNlQXJyYXkoXzB4MjQzZjU5KTt9ZnVuY3Rpb24gXzB4MmFiYTc0KF8weDM4ZGNkMyl7dmFyIF8weDMzZmVhOT1hMF8weDU0OWYsXzB4NDYzZTZkPVtdLF8weDNkYWNiOT0weDA7d2hpbGUoXzB4M2RhY2I5PF8weDM4ZGNkM1tfMHgzM2ZlYTkoMHgyMTMpXSl7dmFyIF8weDFhOTE5ZT1fMHgzOGRjZDNbXzB4M2RhY2I5XTtpZihfMHgxYTkxOWU8MHg4MClfMHg0NjNlNmRbXzB4MzNmZWE5KDB4MjQ1KV0oU3RyaW5nWydmcm9tQ2gnKygre30rW10pWyshK1tdXSsnckNvZGUnXShfMHgxYTkxOWUpKSxfMHgzZGFjYjkrKztlbHNlIF8weDFhOTE5ZT4weGJmJiZfMHgxYTkxOWU8MHhlMD8oXzB4NDYzZTZkW18weDMzZmVhOSgweDI0NSldKFN0cmluZ1snZnJvbUNoJysoK3t9K1tdKVsrIStbXV0rJ3JDb2RlJ10oKF8weDFhOTE5ZSYweDFmKTw8MHg2fF8weDM4ZGNkM1tfMHgzZGFjYjkrMHgxXSYweDNmKSksXzB4M2RhY2I5Kz0weDIpOihfMHg0NjNlNmRbXzB4MzNmZWE5KDB4MjQ1KV0oU3RyaW5nW18weDMzZmVhOSgweDIzMyldKChfMHgxYTkxOWUmMHhmKTw8MHhjfChfMHgzOGRjZDNbXzB4M2RhY2I5KzB4MV0mMHgzZik8PDB4NnxfMHgzOGRjZDNbXzB4M2RhY2I5KzB4Ml0mMHgzZikpLF8weDNkYWNiOSs9MHgzKTt9cmV0dXJuIF8weDQ2M2U2ZFsnam9pbiddKCcnKTt9cmV0dXJueyd0b0J5dGVzJzpfMHgxMWFiNTcsJ2Zyb21CeXRlcyc6XzB4MmFiYTc0fTt9KCkpLGNvbnZlcnRIZXg9KGZ1bmN0aW9uKCl7dmFyIF8weDE0MjJlZj1hMF8weGNhNzYwMDtmdW5jdGlvbiBfMHgzODY4NGMoXzB4NWU2YTEyKXt2YXIgXzB4MTMxMzEzPWEwXzB4NTQ5ZixfMHg1YjNiZGU9W107Zm9yKHZhciBfMHg0MGQyMDM9MHgwO18weDQwZDIwMzxfMHg1ZTZhMTJbXzB4MTMxMzEzKDB4MjEzKV07XzB4NDBkMjAzKz0weDIpe18weDViM2JkZVtfMHgxMzEzMTMoMHgyNDUpXShwYXJzZUludChfMHg1ZTZhMTJbXzB4MTMxMzEzKDB4MWU1KV0oXzB4NDBkMjAzLDB4MiksMHgxMCkpO31yZXR1cm4gXzB4NWIzYmRlO312YXIgXzB4NWFjMDEyPV8weDE0MjJlZigweDIwNyk7ZnVuY3Rpb24gXzB4NDE2YzRkKF8weDE4NWNiMCl7dmFyIF8weDIyNzdhZT1fMHgxNDIyZWYsXzB4MzIyM2YzPVtdO2Zvcih2YXIgXzB4MzU1ZDhhPTB4MDtfMHgzNTVkOGE8XzB4MTg1Y2IwWydsZW5ndGgnXTtfMHgzNTVkOGErKyl7dmFyIF8weDUxNWMxZD1fMHgxODVjYjBbXzB4MzU1ZDhhXTtfMHgzMjIzZjNbXzB4MjI3N2FlKDB4MjQ1KV0oXzB4NWFjMDEyWyhfMHg1MTVjMWQmMHhmMCk: {'1': '1'}\n/\u00ccZZ: {'1': '1'}",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Keyword Flags (Count)",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 1,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Parser Results",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Comment: 3\nXREF: 1\nTrailer: 1\nStartXref: 1\nIndirect object: 28\n  16: 2, 3, 8, 9, 12, 13, 14, 15, 16, 17, 18, 21, 23, 25, 26, 28\n /Annot 1: 7\n /Catalog 1: 1\n /Filespec 1: 11\n /Font 3: 19, 20, 24\n /FontDescriptor 1: 27\n /OCG 1: 4\n /Outlines 1: 5\n /Page 1: 10\n /Pages 1: 6\n /XObject 1: 22\n /JS 1: 9\n /JavaScript 2: 3, 9\n /AcroForm 1: 1",
+        "body_config": {},
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "PDF Statistcs",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 2,
+        "heuristic": null,
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Content of Interest",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "Content over 750 bytes it will be extracted for analysis\nName: carved_content_obj_10_9980a5d - SHA256: 9980a5d09c1b94eab5eaea21c2e1363bd1b7fccb1cc3d941cf40fd3ea8d7f010",
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 3,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 8,
+          "score": 0,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Object 10: Hits for Keyword 'XObject':",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": null,
+        "body_config": {},
+        "body_format": "TEXT",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": {
+          "attack_ids": [],
+          "frequency": 1,
+          "heur_id": 19,
+          "score": 100,
+          "score_map": {},
+          "signatures": {}
+        },
+        "promote_to": null,
+        "tags": {},
+        "title_text": "Embedded JavaScript",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [
+      {
+        "name": "51c38129a8b9dc22085180853378296db927934e8a95f96205f80cb762979bff_base64",
+        "sha256": "51c38129a8b9dc22085180853378296db927934e8a95f96205f80cb762979bff"
+      },
+      {
+        "name": "carved_content_obj_10_9980a5d",
+        "sha256": "9980a5d09c1b94eab5eaea21c2e1363bd1b7fccb1cc3d941cf40fd3ea8d7f010"
+      },
+      {
+        "name": "ac4aa71c_js_literal.js",
+        "sha256": "ac4aa71c501d251717ff180f71d09f948b98863a4f321d6425e972c101ee65c0"
+      },
+      {
+        "name": "f02d0bff0daeb02a925906f97783d990923b8a888c17c216e865c8efccfe7ee8_base64",
+        "sha256": "f02d0bff0daeb02a925906f97783d990923b8a888c17c216e865c8efccfe7ee8"
+      }
+    ],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [
+      {
+        "attack_ids": [],
+        "heur_id": 8,
+        "signatures": []
+      },
+      {
+        "attack_ids": [],
+        "heur_id": 19,
+        "signatures": []
+      }
+    ],
+    "tags": {},
+    "temp_submission_data": {}
+  }
+}
